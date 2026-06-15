@@ -2,6 +2,7 @@
 
 import { useConversation } from '@elevenlabs/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { createNotionBrief, createTickets, completeSession } from '@/app/actions'
 
 interface Session {
     productName: string
@@ -14,6 +15,7 @@ interface Session {
 export function Conversation({ session, sessionId }: { session: Session; sessionId: string }) {
     const hasStartedRef = useRef(false)
     const [hasEnded, setHasEnded] = useState(false)
+    const [micError, setMicError] = useState(false)
 
     const clientTools = useMemo(
         () => ({
@@ -27,18 +29,9 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 recommended_actions: string
                 transcript_summary: string
             }) => {
-                const response = await fetch('/api/tools/notion', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(params),
-                })
-                const data = await response.json()
-                fetch(`/api/sessions/${sessionId}/complete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notionUrl: data.url }),
-                }).catch(() => null)
-                return data.url as string
+                const { url, status } = await createNotionBrief(params)
+                await completeSession(sessionId, { notionUrl: url, notionStatus: status })
+                return url ?? ''
             },
             create_tickets: async (params: {
                 product_name: string
@@ -49,18 +42,9 @@ export function Conversation({ session, sessionId }: { session: Session; session
                     priority: 1 | 2 | 3 | 4
                 }[]
             }) => {
-                const response = await fetch('/api/tools/tickets', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(params),
-                })
-                const data = await response.json()
-                fetch(`/api/sessions/${sessionId}/complete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ticketsUrl: data.url }),
-                }).catch(() => null)
-                return JSON.stringify({ count: data.count, url: data.url })
+                const { count, url, status } = await createTickets(params)
+                await completeSession(sessionId, { ticketsUrl: url, ticketsStatus: status })
+                return JSON.stringify({ count, url })
             },
         }),
         [sessionId]
@@ -73,14 +57,14 @@ export function Conversation({ session, sessionId }: { session: Session; session
         onDisconnect: () => {
             if (hasStartedRef.current) setHasEnded(true)
         },
-        onMessage: (message) => console.log('Message:', message),
-        onError: (error) => console.error('Error:', error),
+        onError: () => {},
     })
 
     const startConversation = useCallback(async () => {
         try {
             await navigator.mediaDevices.getUserMedia({ audio: true })
-            await conversation.startSession({
+            setMicError(false)
+            conversation.startSession({
                 agentId: 'agent_7001ktysmmsked2bzjkmdvjqwp1j',
                 userId: 'test-user-0',
                 dynamicVariables: {
@@ -94,12 +78,14 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 clientTools,
             })
         } catch (error) {
-            console.error('Failed to start conversation:', error)
+            if (error instanceof DOMException && error.name === 'NotAllowedError') {
+                setMicError(true)
+            }
         }
     }, [conversation, clientTools, session])
 
     const stopConversation = useCallback(async () => {
-        await conversation.endSession()
+        conversation.endSession()
     }, [conversation])
 
     const isConnected = conversation.status === 'connected'
@@ -152,6 +138,12 @@ export function Conversation({ session, sessionId }: { session: Session; session
                     Speak naturally and take your time. There are no right or wrong answers.
                 </p>
             </div>
+
+            {micError && (
+                <p className="text-sm text-red-600 max-w-xs">
+                    Microphone access was denied. Please allow mic access in your browser settings and try again.
+                </p>
+            )}
 
             <button
                 onClick={startConversation}

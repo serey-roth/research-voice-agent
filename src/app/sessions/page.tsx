@@ -11,6 +11,8 @@ interface Session {
     createdAt: string
     notionUrl: string | null
     ticketsUrl: string | null
+    notionStatus: 'success' | 'failed' | null
+    ticketsStatus: 'success' | 'failed' | null
 }
 
 export const revalidate = 0
