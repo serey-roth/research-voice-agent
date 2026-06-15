@@ -40,9 +40,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# working docs
 PRD.md
+DESIGN.md
+PRODUCT.md
 
 # editor/tool config
 .agents/
 .claude/
 .cursor/
+.impeccable/
