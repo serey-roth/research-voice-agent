@@ -19,17 +19,18 @@ const tools: ElevenLabs.PromptAgentApiModelOutputToolsItem[] = [
     },
     {
         type: 'client',
-        name: 'createDoc',
-        description:
-            'Create a structured Google Doc research brief after the interview is complete.',
+        name: 'create_notion_brief',
+        description: 'Create a structured Notion research brief after the interview is complete.',
         expectsResponse: true,
         parameters: {
             type: 'object',
             required: [
                 'product_name',
+                'participant_email',
+                'date',
                 'key_findings',
+                'pain_points',
                 'validated_assumptions',
-                'open_questions',
                 'recommended_actions',
                 'transcript_summary',
             ],
@@ -38,25 +39,78 @@ const tools: ElevenLabs.PromptAgentApiModelOutputToolsItem[] = [
                     type: 'string',
                     description: 'The name of the product being researched.',
                 },
+                participant_email: {
+                    type: 'string',
+                    description: 'The email of the participant, from {{participant_email}}.',
+                },
+                date: {
+                    type: 'string',
+                    description: 'The date of the interview, from {{current_date}}.',
+                },
                 key_findings: {
                     type: 'string',
-                    description: 'The key findings from the interview.',
+                    description:
+                        'The key findings from the interview. 3–5 bullet points as complete sentences.',
+                },
+                pain_points: {
+                    type: 'string',
+                    description:
+                        'Specific pain points or frustrations surfaced during the interview. If none, state "None identified."',
                 },
                 validated_assumptions: {
                     type: 'string',
-                    description: 'Assumptions that were validated during the interview.',
-                },
-                open_questions: {
-                    type: 'string',
-                    description: 'Questions that remain unanswered or need further research.',
+                    description:
+                        'Assumptions that were validated during the interview. If none, state "None identified."',
                 },
                 recommended_actions: {
                     type: 'string',
-                    description: 'Recommended next actions based on the interview findings.',
+                    description:
+                        'Concrete next steps for the product team. 2–4 actionable bullet points.',
                 },
                 transcript_summary: {
                     type: 'string',
-                    description: 'A concise summary of the full interview transcript.',
+                    description:
+                        "A 3–5 sentence narrative summary capturing the participant's main story and key moments.",
+                },
+            },
+        },
+    },
+    {
+        type: 'client',
+        name: 'create_tickets',
+        description: 'Create Linear issues for each pain point surfaced during the interview.',
+        expectsResponse: true,
+        parameters: {
+            type: 'object',
+            required: ['pain_points', 'date'],
+            properties: {
+                date: {
+                    type: 'string',
+                    description: 'The date of the interview, from {{current_date}}.',
+                },
+                pain_points: {
+                    type: 'array',
+                    description: 'List of pain points to create as Linear issues.',
+                    items: {
+                        type: 'object',
+                        required: ['title', 'description', 'priority'],
+                        properties: {
+                            title: {
+                                type: 'string',
+                                description: 'Short title for the Linear issue.',
+                            },
+                            description: {
+                                type: 'string',
+                                description:
+                                    'Detailed description including context from the interview.',
+                            },
+                            priority: {
+                                type: 'number',
+                                description:
+                                    'Priority of the issue: 1 = Urgent, 2 = High, 3 = Medium, 4 = Low. Use 1 for critical blockers, 2 for strong emotion or workarounds, 3 for general friction, 4 for minor annoyances.',
+                            },
+                        },
+                    },
                 },
             },
         },
