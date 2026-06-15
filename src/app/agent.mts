@@ -82,8 +82,12 @@ const tools: ElevenLabs.PromptAgentApiModelOutputToolsItem[] = [
         expectsResponse: true,
         parameters: {
             type: 'object',
-            required: ['pain_points', 'date'],
+            required: ['product_name', 'pain_points', 'date'],
             properties: {
+                product_name: {
+                    type: 'string',
+                    description: 'The name of the product being researched, from {{product_name}}.',
+                },
                 date: {
                     type: 'string',
                     description: 'The date of the interview, from {{current_date}}.',

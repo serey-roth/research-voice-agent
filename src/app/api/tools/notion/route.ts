@@ -27,13 +27,22 @@ export async function POST(request: Request) {
             transcript_summary,
         } = body
 
-        const title = `${product_name} — ${participant_email} — ${date}`
+        const title = `${product_name} Research Brief`
 
         const page = await notion.pages.create({
             parent: { database_id: process.env.NOTION_DATABASE_ID! },
             properties: {
-                Name: {
+                'Brief Title': {
                     title: [{ text: { content: title } }],
+                },
+                'Product Name': {
+                    rich_text: [{ text: { content: product_name } }],
+                },
+                'Participant Email': {
+                    email: participant_email,
+                },
+                'Interview Date': {
+                    date: { start: date },
                 },
             },
             children: [

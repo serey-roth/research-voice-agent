@@ -41,6 +41,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 return data.url as string
             },
             create_tickets: async (params: {
+                product_name: string
                 date: string
                 pain_points: {
                     title: string
