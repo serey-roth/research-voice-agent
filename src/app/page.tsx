@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 
 interface SessionForm {
@@ -58,67 +59,85 @@ export default function Home() {
 
     return (
         <main className="min-h-screen flex flex-col items-center py-16 px-6">
-            <div className="w-full max-w-xl">
-                <h1 className="text-3xl font-bold mb-2">Set Up Your Research Session</h1>
-                <p className="text-gray-500 mb-8">
-                    Configure your interview and share the link with your participant.
-                </p>
+            <div className="w-full max-w-[560px]">
+                <div className="mb-10 flex items-start justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight text-ink mb-1">
+                            New research session
+                        </h1>
+                        <p className="text-sm text-muted">
+                            Configure your interview and share the link with your participant.
+                        </p>
+                    </div>
+                    <Link
+                        href="/sessions"
+                        className="text-[13px] text-muted hover:text-ink transition-colors shrink-0 mt-1"
+                    >
+                        View sessions
+                    </Link>
+                </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                    <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium">Product Name</label>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-medium text-ink">Product name</label>
                         <input
                             type="text"
                             required
                             value={form.productName}
                             onChange={(e) => setForm({ ...form, productName: e.target.value })}
-                            className="border rounded px-3 py-2 text-sm"
+                            className="border border-neutral-200 rounded-[6px] px-3 py-2 text-sm text-ink placeholder:text-muted bg-bg"
                             placeholder="e.g. Loom"
                         />
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium">Product Description</label>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-medium text-ink">
+                            Product description
+                        </label>
                         <textarea
                             required
                             value={form.productDescription}
                             onChange={(e) =>
                                 setForm({ ...form, productDescription: e.target.value })
                             }
-                            className="border rounded px-3 py-2 text-sm resize-none"
+                            className="border border-neutral-200 rounded-[6px] px-3 py-2 text-sm text-ink placeholder:text-muted bg-bg resize-none"
                             rows={2}
                             placeholder="One sentence about what your product does"
                         />
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium">Research Goal</label>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-medium text-ink">Research goal</label>
                         <textarea
                             required
                             value={form.researchGoal}
                             onChange={(e) => setForm({ ...form, researchGoal: e.target.value })}
-                            className="border rounded px-3 py-2 text-sm resize-none"
+                            className="border border-neutral-200 rounded-[6px] px-3 py-2 text-sm text-ink placeholder:text-muted bg-bg resize-none"
                             rows={2}
                             placeholder="e.g. Understand why users drop off during onboarding"
                         />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium">Seed Questions</label>
+                        <label className="text-[13px] font-medium text-ink">Seed questions</label>
+                        <p className="text-[12px] text-muted -mt-1">
+                            The AI will probe and follow up — these are starting points only.
+                        </p>
                         {form.seedQuestions.map((q, i) => (
-                            <div key={i} className="flex gap-2">
+                            <div key={i} className="flex gap-2 items-center">
                                 <input
                                     type="text"
                                     value={q}
                                     onChange={(e) => updateSeedQuestion(i, e.target.value)}
-                                    className="border rounded px-3 py-2 text-sm flex-1"
+                                    className="border border-neutral-200 rounded-[6px] px-3 py-2 text-sm text-ink placeholder:text-muted bg-bg flex-1"
                                     placeholder={`Question ${i + 1}`}
                                 />
                                 {form.seedQuestions.length > 1 && (
                                     <button
                                         type="button"
                                         onClick={() => removeQuestion(i)}
-                                        className="text-gray-400 hover:text-red-500 px-2"
+                                        aria-label="Remove question"
+                                        className="text-muted hover:text-ink transition-colors w-6 h-6 flex items-center justify-center shrink-0"
                                     >
                                         ✕
                                     </button>
@@ -129,23 +148,26 @@ export default function Home() {
                             <button
                                 type="button"
                                 onClick={addQuestion}
-                                className="text-sm text-blue-500 hover:underline self-start"
+                                className="text-[13px] text-primary hover:text-primary-hover transition-colors self-start"
                             >
                                 + Add question
                             </button>
                         )}
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium">Participant Email</label>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-medium text-ink">
+                            Participant email
+                        </label>
+                        <p className="text-[12px] text-muted -mt-1">
+                            Used to schedule follow-ups if needed. Never shared with the AI.
+                        </p>
                         <input
                             type="email"
                             required
                             value={form.participantEmail}
-                            onChange={(e) =>
-                                setForm({ ...form, participantEmail: e.target.value })
-                            }
-                            className="border rounded px-3 py-2 text-sm"
+                            onChange={(e) => setForm({ ...form, participantEmail: e.target.value })}
+                            className="border border-neutral-200 rounded-[6px] px-3 py-2 text-sm text-ink placeholder:text-muted bg-bg"
                             placeholder="participant@email.com"
                         />
                     </div>
@@ -153,19 +175,19 @@ export default function Home() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="bg-black text-white rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 disabled:bg-gray-300"
+                        className="mt-1 bg-primary hover:bg-primary-hover disabled:bg-neutral-200 disabled:text-neutral-400 text-white rounded-[6px] px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
                     >
-                        {loading ? 'Generating...' : 'Generate Interview Link'}
+                        {loading ? 'Generating link…' : 'Generate interview link'}
                     </button>
                 </form>
 
                 {interviewUrl && (
-                    <div className="mt-8 p-4 bg-gray-50 rounded border">
-                        <p className="text-sm font-medium mb-2">Interview Link</p>
-                        <p className="text-sm text-blue-600 break-all">{interviewUrl}</p>
+                    <div className="mt-8 p-4 bg-surface rounded-lg border border-neutral-200">
+                        <p className="text-[13px] font-medium text-ink mb-1">Interview link</p>
+                        <p className="text-sm text-accent break-all font-mono">{interviewUrl}</p>
                         <button
                             onClick={() => navigator.clipboard.writeText(interviewUrl)}
-                            className="mt-2 text-xs text-gray-500 hover:underline"
+                            className="mt-2.5 text-[12px] text-muted hover:text-ink transition-colors"
                         >
                             Copy to clipboard
                         </button>
