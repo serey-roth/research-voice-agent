@@ -9,12 +9,9 @@ interface Session {
     researchGoal: string
     seedQuestions: string[]
     participantEmail: string
-    status: 'pending' | 'completed'
-    notionUrl: string | null
-    ticketsUrl: string | null
 }
 
-export function InterviewClient({ session, sessionId }: { session: Session; sessionId: string }) {
+export function Interview({ session, sessionId }: { session: Session; sessionId: string }) {
     return (
         <ConversationProvider>
             <Conversation session={session} sessionId={sessionId} />

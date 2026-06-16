@@ -1,8 +1,10 @@
 'use client'
 
 import { useConversation } from '@elevenlabs/react'
-import { useRef, useState } from 'react'
-import { createNotionBrief, createTickets, completeSession } from '@/app/actions'
+import { useEffect, useRef, useState } from 'react'
+import { Orb } from 'orb-ui'
+import type { OrbState } from 'orb-ui'
+import { createNotionBrief, createTickets, completeSession, recordUsage } from '@/app/actions'
 
 interface Session {
     productName: string
@@ -12,14 +14,22 @@ interface Session {
     participantEmail: string
 }
 
+const CONNECT_TIMEOUT_MS = 15000
+
 export function Conversation({ session, sessionId }: { session: Session; sessionId: string }) {
     const hasStartedRef = useRef(false)
+    const conversationIdRef = useRef<string | null>(null)
+    const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const [hasEnded, setHasEnded] = useState(false)
     const [micError, setMicError] = useState(false)
+    const [sessionError, setSessionError] = useState(false)
+    const [connectTimedOut, setConnectTimedOut] = useState(false)
 
     const clientTools = {
         create_notion_brief: async (params: {
             product_name: string
+            product_description: string
+            research_goal: string
             participant_email: string
             date: string
             key_findings: string
@@ -27,7 +37,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
             recommended_actions: string
             transcript_summary: string
         }) => {
-            const { url, status } = await createNotionBrief(params)
+            const { url, status } = await createNotionBrief(params, sessionId)
             await completeSession(sessionId, { notionUrl: url, notionStatus: status })
             return url ?? ''
         },
@@ -40,25 +50,67 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 priority: 1 | 2 | 3 | 4
             }[]
         }) => {
-            const { count, url, status } = await createTickets(params)
+            const { count, url, status } = await createTickets(params, sessionId)
             await completeSession(sessionId, { ticketsUrl: url, ticketsStatus: status })
             return JSON.stringify({ count, url })
         },
     }
 
     const conversation = useConversation({
-        onConnect: () => { hasStartedRef.current = true },
-        onDisconnect: () => { if (hasStartedRef.current) setHasEnded(true) },
-        onError: () => {},
+        onConnect: ({ conversationId }) => {
+            hasStartedRef.current = true
+            conversationIdRef.current = conversationId
+            if (connectTimeoutRef.current) {
+                clearTimeout(connectTimeoutRef.current)
+                connectTimeoutRef.current = null
+            }
+        },
+        onDisconnect: () => {
+            if (!hasStartedRef.current) return
+            setHasEnded(true)
+            completeSession(sessionId, {})
+            if (conversationIdRef.current) {
+                recordUsage(conversationIdRef.current, sessionId)
+            }
+        },
+        onError: () => {
+            setSessionError(true)
+            if (connectTimeoutRef.current) {
+                clearTimeout(connectTimeoutRef.current)
+                connectTimeoutRef.current = null
+            }
+        },
     })
+
+    const { status, isSpeaking } = conversation
+    const isConnecting = status === 'connecting'
+    const isConnected = status === 'connected'
+    const isActive = isConnecting || isConnected
+
+    // Best-effort: end session on tab close so onDisconnect fires and usage is recorded
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (isActive) conversation.endSession()
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [conversation, isActive])
 
     const startConversation = async () => {
         try {
             await navigator.mediaDevices.getUserMedia({ audio: true })
             setMicError(false)
+            setSessionError(false)
+            setConnectTimedOut(false)
+
+            connectTimeoutRef.current = setTimeout(() => {
+                conversation.endSession()
+                setConnectTimedOut(true)
+            }, CONNECT_TIMEOUT_MS)
+
             conversation.startSession({
-                agentId: 'agent_7001ktysmmsked2bzjkmdvjqwp1j',
-                userId: 'test-user-0',
+                agentId: process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID!,
+                userId: sessionId,
                 dynamicVariables: {
                     product_name: session.productName,
                     product_description: session.productDescription,
@@ -76,71 +128,87 @@ export function Conversation({ session, sessionId }: { session: Session; session
         }
     }
 
-    const stopConversation = () => { conversation.endSession() }
+    const stopConversation = () => {
+        conversation.endSession()
+    }
 
-    const { status, isSpeaking } = conversation
-    const isConnecting = status === 'connecting'
-    const isConnected = status === 'connected'
+    const orbState: OrbState = isConnecting
+        ? 'connecting'
+        : isConnected
+          ? isSpeaking
+              ? 'speaking'
+              : 'listening'
+          : 'idle'
 
     if (hasEnded) {
         return (
-            <div className="flex flex-col items-center gap-2 text-center">
-                <p className="text-base font-medium text-ink">Thanks for your time.</p>
-                <p className="text-sm text-muted">Your responses have been saved.</p>
-            </div>
-        )
-    }
-
-    if (isConnecting || isConnected) {
-        return (
-            <div className="flex flex-col items-center gap-10">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="relative flex items-center justify-center w-10 h-10">
-                        {isSpeaking && (
-                            <span className="absolute inset-0 rounded-full bg-primary opacity-20 animate-ping" />
-                        )}
-                        <span className={`w-5 h-5 rounded-full transition-colors duration-300 ${isSpeaking ? 'bg-primary' : 'bg-neutral-300'}`} />
-                    </div>
-                    <p className="text-sm text-muted">
-                        {isConnecting ? 'Connecting…' : isSpeaking ? 'Speaking…' : 'Listening…'}
-                    </p>
+            <div className="flex flex-col items-center gap-3 text-center max-w-xs">
+                <div className="w-8 h-8 rounded-full bg-surface border border-neutral-200 flex items-center justify-center mb-1">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path
+                            d="M2 6l3 3 5-5"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
                 </div>
-
-                {isConnected && (
-                    <button
-                        onClick={stopConversation}
-                        className="text-[13px] text-muted hover:text-ink transition-colors"
-                    >
-                        End interview early
-                    </button>
-                )}
+                <p className="text-sm font-medium text-ink">Thanks for your time.</p>
+                <p className="text-[13px] text-muted leading-relaxed">
+                    Your responses have been recorded.
+                </p>
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col items-center gap-8 text-center">
-            <div className="flex flex-col items-center gap-2">
-                <h1 className="text-xl font-semibold text-ink tracking-tight">
-                    You&rsquo;re all set
-                </h1>
-                <p className="text-sm text-muted max-w-xs">
-                    Speak naturally and take your time. There are no right or wrong answers.
-                </p>
+        <div className="flex flex-col items-center gap-10 text-center">
+            {!isActive && (
+                <div className="flex flex-col items-center gap-2">
+                    <h1 className="text-xl font-semibold text-ink tracking-tight">
+                        You&rsquo;re all set
+                    </h1>
+                    <p className="text-sm text-muted max-w-xs">
+                        Speak naturally and take your time. There are no right or wrong answers.
+                    </p>
+                </div>
+            )}
+
+            <div className="flex flex-col items-center gap-5">
+                <Orb
+                    state={orbState}
+                    theme="circle"
+                    size={120}
+                    onStart={startConversation}
+                    onStop={stopConversation}
+                    aria-label={isActive ? 'End interview' : 'Start interview'}
+                />
+
+                {isActive && (
+                    <p className="text-[13px] text-muted">
+                        {isConnecting ? 'Getting ready…' : isSpeaking ? 'Speaking' : 'Listening'}
+                    </p>
+                )}
+
+                {!isActive && !sessionError && !connectTimedOut && (
+                    <p className="text-[12px] text-muted">Click to start</p>
+                )}
             </div>
 
             {micError && (
                 <p className="text-sm text-red-600 max-w-xs">
-                    Microphone access was denied. Please allow mic access in your browser settings and try again.
+                    Microphone access was denied. Please allow mic access in your browser settings
+                    and try again.
                 </p>
             )}
 
-            <button
-                onClick={startConversation}
-                className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-medium rounded-[6px] transition-colors cursor-pointer"
-            >
-                Start interview
-            </button>
+            {(sessionError || connectTimedOut) && (
+                <p className="text-sm text-red-600 max-w-xs">
+                    Something went wrong connecting to the interview. Please refresh the page and
+                    try again.
+                </p>
+            )}
         </div>
     )
 }
