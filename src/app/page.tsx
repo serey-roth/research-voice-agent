@@ -160,7 +160,7 @@ export default function Home() {
                             Participant email
                         </label>
                         <p className="text-[12px] text-muted -mt-1">
-                            Used to schedule follow-ups if needed. Never shared with the AI.
+                            Used to schedule follow-ups if needed.
                         </p>
                         <input
                             type="email"

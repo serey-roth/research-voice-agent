@@ -1,7 +1,7 @@
 'use client'
 
 import { useConversation } from '@elevenlabs/react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { createNotionBrief, createTickets, completeSession } from '@/app/actions'
 
 interface Session {
@@ -17,50 +17,42 @@ export function Conversation({ session, sessionId }: { session: Session; session
     const [hasEnded, setHasEnded] = useState(false)
     const [micError, setMicError] = useState(false)
 
-    const clientTools = useMemo(
-        () => ({
-            create_notion_brief: async (params: {
-                product_name: string
-                participant_email: string
-                date: string
-                key_findings: string
-                pain_points: string
-                validated_assumptions: string
-                recommended_actions: string
-                transcript_summary: string
-            }) => {
-                const { url, status } = await createNotionBrief(params)
-                await completeSession(sessionId, { notionUrl: url, notionStatus: status })
-                return url ?? ''
-            },
-            create_tickets: async (params: {
-                product_name: string
-                date: string
-                pain_points: {
-                    title: string
-                    description: string
-                    priority: 1 | 2 | 3 | 4
-                }[]
-            }) => {
-                const { count, url, status } = await createTickets(params)
-                await completeSession(sessionId, { ticketsUrl: url, ticketsStatus: status })
-                return JSON.stringify({ count, url })
-            },
-        }),
-        [sessionId]
-    )
+    const clientTools = {
+        create_notion_brief: async (params: {
+            product_name: string
+            participant_email: string
+            date: string
+            key_findings: string
+            pain_points: string
+            recommended_actions: string
+            transcript_summary: string
+        }) => {
+            const { url, status } = await createNotionBrief(params)
+            await completeSession(sessionId, { notionUrl: url, notionStatus: status })
+            return url ?? ''
+        },
+        create_tickets: async (params: {
+            product_name: string
+            date: string
+            pain_points: {
+                title: string
+                description: string
+                priority: 1 | 2 | 3 | 4
+            }[]
+        }) => {
+            const { count, url, status } = await createTickets(params)
+            await completeSession(sessionId, { ticketsUrl: url, ticketsStatus: status })
+            return JSON.stringify({ count, url })
+        },
+    }
 
     const conversation = useConversation({
-        onConnect: () => {
-            hasStartedRef.current = true
-        },
-        onDisconnect: () => {
-            if (hasStartedRef.current) setHasEnded(true)
-        },
+        onConnect: () => { hasStartedRef.current = true },
+        onDisconnect: () => { if (hasStartedRef.current) setHasEnded(true) },
         onError: () => {},
     })
 
-    const startConversation = useCallback(async () => {
+    const startConversation = async () => {
         try {
             await navigator.mediaDevices.getUserMedia({ audio: true })
             setMicError(false)
@@ -82,13 +74,13 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 setMicError(true)
             }
         }
-    }, [conversation, clientTools, session])
+    }
 
-    const stopConversation = useCallback(async () => {
-        conversation.endSession()
-    }, [conversation])
+    const stopConversation = () => { conversation.endSession() }
 
-    const isConnected = conversation.status === 'connected'
+    const { status, isSpeaking } = conversation
+    const isConnecting = status === 'connecting'
+    const isConnected = status === 'connected'
 
     if (hasEnded) {
         return (
@@ -99,31 +91,29 @@ export function Conversation({ session, sessionId }: { session: Session; session
         )
     }
 
-    if (isConnected) {
+    if (isConnecting || isConnected) {
         return (
             <div className="flex flex-col items-center gap-10">
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative flex items-center justify-center w-10 h-10">
-                        {conversation.isSpeaking && (
+                        {isSpeaking && (
                             <span className="absolute inset-0 rounded-full bg-primary opacity-20 animate-ping" />
                         )}
-                        <span
-                            className={`w-5 h-5 rounded-full transition-colors duration-300 ${
-                                conversation.isSpeaking ? 'bg-primary' : 'bg-neutral-300'
-                            }`}
-                        />
+                        <span className={`w-5 h-5 rounded-full transition-colors duration-300 ${isSpeaking ? 'bg-primary' : 'bg-neutral-300'}`} />
                     </div>
                     <p className="text-sm text-muted">
-                        {conversation.isSpeaking ? 'Speaking…' : 'Listening…'}
+                        {isConnecting ? 'Connecting…' : isSpeaking ? 'Speaking…' : 'Listening…'}
                     </p>
                 </div>
 
-                <button
-                    onClick={stopConversation}
-                    className="text-[13px] text-muted hover:text-ink transition-colors"
-                >
-                    End interview early
-                </button>
+                {isConnected && (
+                    <button
+                        onClick={stopConversation}
+                        className="text-[13px] text-muted hover:text-ink transition-colors"
+                    >
+                        End interview early
+                    </button>
+                )}
             </div>
         )
     }
