@@ -30,7 +30,6 @@ const tools: ElevenLabs.PromptAgentApiModelOutputToolsItem[] = [
                 'date',
                 'key_findings',
                 'pain_points',
-                'validated_assumptions',
                 'recommended_actions',
                 'transcript_summary',
             ],
@@ -56,11 +55,6 @@ const tools: ElevenLabs.PromptAgentApiModelOutputToolsItem[] = [
                     type: 'string',
                     description:
                         'Specific pain points or frustrations surfaced during the interview. If none, state "None identified."',
-                },
-                validated_assumptions: {
-                    type: 'string',
-                    description:
-                        'Assumptions that were validated during the interview. If none, state "None identified."',
                 },
                 recommended_actions: {
                     type: 'string',
@@ -149,6 +143,28 @@ async function updateAgent() {
         },
     })
     console.log('Agent updated:', agent.agentId)
+
+    // Set responseMocks on workspace tools so simulation tests can intercept without
+    // calling real APIs (mockingStrategy: 'all' uses these when no mock matches)
+    const { tools: workspaceTools } = await elevenlabs.conversationalAi.tools.list()
+    const mockValues: Record<string, string> = {
+        create_notion_brief: 'https://notion.so/test-brief-123',
+        create_tickets: JSON.stringify({ count: 2, url: 'https://linear.app/test' }),
+    }
+    for (const wt of workspaceTools) {
+        const cfg = wt.toolConfig
+        if (
+            (cfg.type === 'client' || cfg.type === 'system' || cfg.type === 'webhook') &&
+            cfg.name in mockValues
+        ) {
+            await elevenlabs.conversationalAi.tools.update(wt.id, {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                toolConfig: cfg as any,
+                responseMocks: [{ mockResult: mockValues[cfg.name] }],
+            })
+            console.log(`  ✓ Mock set for ${cfg.name}`)
+        }
+    }
 }
 
 const command = process.argv[2]

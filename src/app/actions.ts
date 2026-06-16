@@ -16,7 +16,6 @@ interface NotionBriefParams {
     date: string
     key_findings: string
     pain_points: string
-    validated_assumptions: string
     recommended_actions: string
     transcript_summary: string
 }
@@ -43,7 +42,6 @@ export async function createNotionBrief(
             date,
             key_findings,
             pain_points,
-            validated_assumptions,
             recommended_actions,
             transcript_summary,
         } = params
@@ -65,12 +63,12 @@ export async function createNotionBrief(
                 },
             },
             children: [
+                heading('Product Description'),
+                paragraph('product_description'),
                 heading('Key Findings'),
                 paragraph(key_findings),
                 heading('Pain Points'),
                 paragraph(pain_points),
-                heading('Validated Assumptions'),
-                paragraph(validated_assumptions),
                 heading('Recommended Actions'),
                 paragraph(recommended_actions),
                 heading('Transcript Summary'),
