@@ -455,7 +455,7 @@ async function runEval() {
     }
 
     console.log('\nRunning tests…')
-    const invocation = await elevenlabs.conversationalAi.agents.runTests(process.env.ELEVENLABS_AGENT_ID!, {
+    const invocation = await elevenlabs.conversationalAi.agents.runTests(process.env.ELEVENLABS_AGENT_ID, {
         tests: testIds.map((id) => ({ testId: id })),
     })
     console.log(`  Invocation: ${invocation.id}`)

@@ -12,6 +12,7 @@ declare namespace NodeJS {
         UPSTASH_REDIS_REST_TOKEN: string
 
         ELEVENLABS_API_KEY: string
+        ELEVENLABS_AGENT_ID: string
         NEXT_PUBLIC_ELEVENLABS_AGENT_ID: string
         ELEVENLABS_USAGE_CAP_SECONDS?: string
 

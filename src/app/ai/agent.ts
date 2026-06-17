@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { ElevenLabsClient, ElevenLabs } from '@elevenlabs/elevenlabs-js'
-import { prompt } from './prompt.mts'
+import { prompt } from './prompt.ts'
 
 const elevenlabs = new ElevenLabsClient()
 
@@ -145,7 +145,7 @@ async function createAgent() {
 }
 
 async function updateAgent() {
-    const agent = await elevenlabs.conversationalAi.agents.update(process.env.ELEVENLABS_AGENT_ID!, {
+    const agent = await elevenlabs.conversationalAi.agents.update(process.env.ELEVENLABS_AGENT_ID, {
         conversationConfig: {
             agent: {
                 prompt: { prompt, tools },

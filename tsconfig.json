@@ -28,8 +28,6 @@
         ".next/types/**/*.ts",
         "**/*.ts",
         "**/*.tsx",
-        "src/app/agent.mts",
-        "src/app/prompt.mts",
         ".next/dev/types/**/*.ts"
     ],
     "exclude": ["node_modules"]

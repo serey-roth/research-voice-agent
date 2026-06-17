@@ -8,8 +8,8 @@
         "start": "next start",
         "lint": "eslint",
         "format": "prettier --write .",
-        "agent:update": "node --experimental-strip-types src/app/agent.mts update",
-        "eval": "node --experimental-strip-types src/app/eval.mts"
+        "agent:update": "node --experimental-strip-types src/app/ai/agent.ts update",
+        "eval": "node --experimental-strip-types src/app/ai/eval.ts"
     },
     "dependencies": {
         "@clerk/nextjs": "^7.5.3",
