@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis'
+import { AlertCircle, Check } from 'lucide-react'
 import { Interview } from './Interview'
 
 const redis = Redis.fromEnv()
@@ -30,15 +31,7 @@ export default async function InterviewPage({
             <main className="min-h-screen flex flex-col items-center justify-center px-6">
                 <div className="flex flex-col items-center gap-3 text-center max-w-xs">
                     <div className="w-8 h-8 rounded-full border border-neutral-200 flex items-center justify-center mb-1">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path
-                                d="M7 2v5M7 10.5v.5"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                className="text-muted"
-                            />
-                        </svg>
+                        <AlertCircle size={14} className="text-muted" />
                     </div>
                     <p className="text-sm font-medium text-ink">Link not found</p>
                     <p className="text-[13px] text-muted leading-relaxed">
@@ -59,14 +52,7 @@ export default async function InterviewPage({
                 <main className="min-h-screen flex flex-col items-center justify-center px-6">
                     <div className="flex flex-col items-center gap-3 text-center max-w-xs">
                         <div className="w-8 h-8 rounded-full border border-neutral-200 flex items-center justify-center mb-1">
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <path
-                                    d="M7 2v5M7 10.5v.5"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                />
-                            </svg>
+                            <AlertCircle size={14} className="text-muted" />
                         </div>
                         <p className="text-sm font-medium text-ink">Session unavailable</p>
                         <p className="text-[13px] text-muted leading-relaxed">
@@ -84,16 +70,7 @@ export default async function InterviewPage({
             <main className="min-h-screen flex flex-col items-center justify-center px-6">
                 <div className="flex flex-col items-center gap-3 text-center max-w-xs">
                     <div className="w-8 h-8 rounded-full bg-surface border border-neutral-200 flex items-center justify-center mb-1">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path
-                                d="M2 6l3 3 5-5"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="text-ink"
-                            />
-                        </svg>
+                        <Check size={14} />
                     </div>
                     <p className="text-sm font-medium text-ink">Interview complete</p>
                     <p className="text-[13px] text-muted leading-relaxed">

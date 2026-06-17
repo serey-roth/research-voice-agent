@@ -2,9 +2,16 @@
 
 import { useConversation } from '@elevenlabs/react'
 import { useEffect, useRef, useState } from 'react'
+import { Check } from 'lucide-react'
 import { Orb } from 'orb-ui'
 import type { OrbState } from 'orb-ui'
-import { createNotionBrief, createTickets, completeSession, recordUsage } from '@/app/actions'
+import {
+    createBrief,
+    createIssues,
+    completeSession,
+    recordUsage,
+    updateSessionStatus,
+} from '@/app/actions'
 
 interface Session {
     productName: string
@@ -26,7 +33,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
     const [connectTimedOut, setConnectTimedOut] = useState(false)
 
     const clientTools = {
-        create_notion_brief: async (params: {
+        create_brief: async (params: {
             product_name: string
             product_description: string
             research_goal: string
@@ -37,11 +44,11 @@ export function Conversation({ session, sessionId }: { session: Session; session
             recommended_actions: string
             transcript_summary: string
         }) => {
-            const { url, status } = await createNotionBrief(params, sessionId)
+            const { url, status } = await createBrief(params, sessionId)
             await completeSession(sessionId, { notionUrl: url, notionStatus: status })
             return url ?? ''
         },
-        create_tickets: async (params: {
+        create_issues: async (params: {
             product_name: string
             date: string
             pain_points: {
@@ -50,8 +57,8 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 priority: 1 | 2 | 3 | 4
             }[]
         }) => {
-            const { count, url, status } = await createTickets(params, sessionId)
-            await completeSession(sessionId, { ticketsUrl: url, ticketsStatus: status })
+            const { count, url, status } = await createIssues(params, sessionId)
+            await completeSession(sessionId, { issuesUrl: url, issuesStatus: status })
             return JSON.stringify({ count, url })
         },
     }
@@ -64,17 +71,20 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 clearTimeout(connectTimeoutRef.current)
                 connectTimeoutRef.current = null
             }
+            updateSessionStatus(sessionId, 'active')
         },
         onDisconnect: () => {
             if (!hasStartedRef.current) return
             setHasEnded(true)
             completeSession(sessionId, {})
+            updateSessionStatus(sessionId, 'completed')
             if (conversationIdRef.current) {
                 recordUsage(conversationIdRef.current, sessionId)
             }
         },
-        onError: () => {
+        onError: (message: string) => {
             setSessionError(true)
+            updateSessionStatus(sessionId, 'failed', message)
             if (connectTimeoutRef.current) {
                 clearTimeout(connectTimeoutRef.current)
                 connectTimeoutRef.current = null
@@ -144,15 +154,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
         return (
             <div className="flex flex-col items-center gap-3 text-center max-w-xs">
                 <div className="w-8 h-8 rounded-full bg-surface border border-neutral-200 flex items-center justify-center mb-1">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path
-                            d="M2 6l3 3 5-5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
+                    <Check size={14} />
                 </div>
                 <p className="text-sm font-medium text-ink">Thanks for your time.</p>
                 <p className="text-[13px] text-muted leading-relaxed">
