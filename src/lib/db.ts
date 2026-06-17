@@ -85,7 +85,6 @@ export async function disconnectLinear(userId: string): Promise<void> {
     ])
 }
 
-
 export async function getUserUsageSeconds(userId: string): Promise<number> {
     return (await redis.get<number>(`user:${userId}:usage:seconds`)) ?? 0
 }
@@ -120,9 +119,7 @@ export async function getUserProjects<T extends { deletedAt?: string | null }>(
 export async function getUserProjectsWithSessions<
     P extends { deletedAt?: string | null },
     S extends { deletedAt?: string | null } = { deletedAt?: string | null },
->(
-    userId: string
-): Promise<Array<{ id: string } & P & { sessions: Array<{ id: string } & S> }>> {
+>(userId: string): Promise<Array<{ id: string } & P & { sessions: Array<{ id: string } & S> }>> {
     type ProjectWithSessions = { id: string } & P & { sessions: Array<{ id: string } & S> }
     const projects = await getUserProjects<P>(userId)
     return Promise.all(
@@ -144,7 +141,6 @@ export async function getUserProjectsWithSessions<
 export async function addUserProject(userId: string, projectId: string): Promise<void> {
     await redis.lpush(`projects:user:${userId}`, projectId)
 }
-
 
 export async function getSession<T extends object>(sessionId: string): Promise<T | null> {
     return redis.get<T>(`session:${sessionId}`)
@@ -169,7 +165,6 @@ export async function getProjectSessionIds(projectId: string): Promise<string[]>
 export async function addProjectSessionIds(projectId: string, ...ids: string[]): Promise<void> {
     await redis.lpush(`sessions:project:${projectId}`, ...ids)
 }
-
 
 export async function deleteUserData(userId: string): Promise<void> {
     const projectIds = await getUserProjectIds(userId)

@@ -394,9 +394,7 @@ export async function createProject(
         }),
         addUserProject(userId, projectId),
         ...sessions.map((s) => setSession(s.id, s.data)),
-        ...(sessions.length
-            ? [addProjectSessionIds(projectId, ...sessions.map((s) => s.id))]
-            : []),
+        ...(sessions.length ? [addProjectSessionIds(projectId, ...sessions.map((s) => s.id))] : []),
     ])
 
     return {

@@ -76,8 +76,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
             await deleteProject(projectId)
             closePanel()
             router.refresh()
-        } catch {
-        }
+        } catch {}
     }
 
     async function handleCreate(data: FormState): Promise<string | null> {
@@ -237,10 +236,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                             onCancel={cancelEdit}
                         />
                     ) : (
-                        <ProjectFormBody
-                            mode="create"
-                            onSubmit={handleCreate}
-                        />
+                        <ProjectFormBody mode="create" onSubmit={handleCreate} />
                     )}
                 </div>
             </div>
@@ -377,12 +373,7 @@ interface ProjectFormBodyProps {
     onCancel?: () => void
 }
 
-function ProjectFormBody({
-    mode,
-    project,
-    onSubmit,
-    onCancel,
-}: ProjectFormBodyProps) {
+function ProjectFormBody({ mode, project, onSubmit, onCancel }: ProjectFormBodyProps) {
     const [loading, setLoading] = useState(false)
     const [formError, setFormError] = useState<string | null>(null)
     const [form, setForm] = useState<FormState>({
