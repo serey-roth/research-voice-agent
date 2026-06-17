@@ -126,12 +126,12 @@ const tools: ElevenLabs.PromptAgentApiModelOutputToolsItem[] = [
 ]
 
 async function createAgent() {
-    const agent = await elevenlabs.conversationalAi.agents.create({
+    await elevenlabs.conversationalAi.agents.create({
         name: 'Research Moderator Agent',
         tags: ['test'],
         conversationConfig: {
             tts: {
-                voiceId: 'c6SfcYrb2t09NHXiT80T',
+                voiceId: process.env.ELEVENLABS_AGENT_VOICE_ID,
                 modelId: 'eleven_flash_v2',
             },
             agent: {
@@ -141,18 +141,16 @@ async function createAgent() {
             },
         },
     })
-    console.log('Agent created:', agent)
 }
 
 async function updateAgent() {
-    const agent = await elevenlabs.conversationalAi.agents.update(process.env.ELEVENLABS_AGENT_ID, {
+    await elevenlabs.conversationalAi.agents.update(process.env.ELEVENLABS_AGENT_ID, {
         conversationConfig: {
             agent: {
                 prompt: { prompt, tools },
             },
         },
     })
-    console.log('Agent updated:', agent.agentId)
 
     // Set responseMocks on workspace tools so simulation tests can intercept without
     // calling real APIs (mockingStrategy: 'all' uses these when no mock matches)
@@ -184,5 +182,5 @@ if (command === 'create') {
 } else if (command === 'update') {
     updateAgent()
 } else {
-    console.log('Usage: node createAgent.mts <create|update>')
+    console.log('Usage: node src/app/ai/agent.ts <create|update>')
 }

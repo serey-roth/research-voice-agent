@@ -14,6 +14,7 @@ declare namespace NodeJS {
         ELEVENLABS_API_KEY: string
         ELEVENLABS_AGENT_ID: string
         NEXT_PUBLIC_ELEVENLABS_AGENT_ID: string
+        ELEVENLABS_AGENT_VOICE_ID: string
         ELEVENLABS_USAGE_CAP_SECONDS?: string
 
         NOTION_CLIENT_ID: string
