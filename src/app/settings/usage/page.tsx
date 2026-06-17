@@ -1,19 +1,19 @@
 import { auth } from '@clerk/nextjs/server'
-import { Redis } from '@upstash/redis'
 import { redirect } from 'next/navigation'
 import App from '@/app/components/App'
-
-const redis = Redis.fromEnv()
+import { getUserUsageSeconds, getUserProjectsWithSessions, getSessionDuration } from '@/lib/db'
 
 interface Session {
     participantEmail: string
     status: 'pending' | 'completed'
     createdAt: string
     projectId: string
+    deletedAt?: string | null
 }
 
 interface Project {
     productName: string
+    deletedAt?: string | null
 }
 
 export const revalidate = 0
@@ -23,30 +23,12 @@ export default async function UsagePage() {
     if (!userId) redirect('/sign-in')
 
     const capSeconds = parseInt(process.env.ELEVENLABS_USAGE_CAP_SECONDS ?? '1800')
-    const usedSeconds = (await redis.get<number>(`user:${userId}:usage:seconds`)) ?? 0
+    const usedSeconds = await getUserUsageSeconds(userId!)
 
-    // Collect all sessions across all projects
-    const projectIds = await redis.lrange<string>(`projects:user:${userId}`, 0, -1)
-    const allSessions: ({ id: string } & Session & { productName: string })[] = []
-
-    if (projectIds.length) {
-        await Promise.all(
-            projectIds.map(async (projectId) => {
-                const [project, sessionIds] = await Promise.all([
-                    redis.get<Project>(`project:${projectId}`),
-                    redis.lrange<string>(`sessions:project:${projectId}`, 0, -1),
-                ])
-                if (!project || !sessionIds.length) return
-                const sessions = await Promise.all(
-                    sessionIds.map(async (id) => {
-                        const s = await redis.get<Session>(`session:${id}`)
-                        return s ? { id, ...s, productName: project.productName } : null
-                    })
-                )
-                allSessions.push(...(sessions.filter(Boolean) as typeof allSessions))
-            })
-        )
-    }
+    const projectsWithSessions = await getUserProjectsWithSessions<Project, Session>(userId!)
+    const allSessions = projectsWithSessions.flatMap((p) =>
+        p.sessions.map((s) => ({ ...s, productName: p.productName }))
+    )
 
     const completedSessions = allSessions
         .filter((s) => s.status === 'completed')
@@ -55,7 +37,7 @@ export default async function UsagePage() {
     const completedWithDuration = (
         await Promise.all(
             completedSessions.map(async (s) => {
-                const durationSeconds = await redis.get<number>(`session:${s.id}:duration`)
+                const durationSeconds = await getSessionDuration(s.id)
                 return durationSeconds ? { ...s, durationSeconds } : null
             })
         )

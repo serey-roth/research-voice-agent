@@ -9,10 +9,8 @@ export interface Session {
     id: string
     participantEmail: string
     status: SessionStatus
-    notionUrl: string | null
-    issuesUrl: string | null
-    notionStatus: 'success' | 'failed' | null
-    issuesStatus: 'success' | 'failed' | null
+    briefUrl: string | null
+    briefStatus: 'success' | 'failed' | null
     error?: string | null
 }
 
@@ -23,6 +21,8 @@ export interface Project {
     researchGoal: string
     createdAt: string
     sessions: Session[]
+    issuesUrl: string | null
+    issuesStatus: 'success' | 'failed' | null
 }
 
 interface ProjectRowProps {
@@ -31,7 +31,7 @@ interface ProjectRowProps {
     onMenuToggle: (id: string | null) => void
     onView: () => void
     onEdit: () => void
-    onDeleteRequest: () => void
+    onDelete: () => void
     onRetry: () => void
 }
 
@@ -41,11 +41,9 @@ export function ProjectRow({
     onMenuToggle,
     onView,
     onEdit,
-    onDeleteRequest,
+    onDelete,
     onRetry,
 }: ProjectRowProps) {
-    const issuesUrl = project.sessions.find((s) => s.issuesUrl)?.issuesUrl
-    const canEdit = project.sessions.every((s) => s.status === 'pending')
     const menuOpen = openMenuId === project.id
 
     return (
@@ -56,9 +54,9 @@ export function ProjectRow({
                     <p className="text-[13px] text-muted">{project.researchGoal}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 mt-0.5">
-                    {issuesUrl && (
+                    {project.issuesUrl && (
                         <a
-                            href={issuesUrl}
+                            href={project.issuesUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-[12px] text-primary hover:text-primary-hover transition-colors"
@@ -95,19 +93,13 @@ export function ProjectRow({
                                         View details
                                     </button>
                                     <button
-                                        onClick={canEdit ? onEdit : undefined}
-                                        disabled={!canEdit}
-                                        title={
-                                            !canEdit
-                                                ? 'Cannot edit after interviews have started'
-                                                : undefined
-                                        }
+                                        onClick={onEdit}
                                         className="text-left px-3 py-1.5 text-[13px] text-ink hover:bg-neutral-50 transition-colors disabled:text-muted disabled:cursor-not-allowed disabled:hover:bg-transparent"
                                     >
                                         Edit project
                                     </button>
                                     <button
-                                        onClick={onDeleteRequest}
+                                        onClick={onDelete}
                                         className="text-left px-3 py-1.5 text-[13px] text-red-500 hover:bg-neutral-50 transition-colors"
                                     >
                                         Delete project
@@ -165,16 +157,18 @@ export function ProjectRow({
                                         Retry
                                     </button>
                                 )}
-                                {session.notionUrl && (
+                                {session.briefUrl ? (
                                     <a
-                                        href={session.notionUrl}
+                                        href={session.briefUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-[12px] text-primary hover:text-primary-hover transition-colors"
                                     >
                                         Brief ↗
                                     </a>
-                                )}
+                                ) : session.briefStatus === 'failed' ? (
+                                    <span className="text-[12px] text-red-400">Brief failed</span>
+                                ) : null}
                             </div>
                         </div>
                     ))}

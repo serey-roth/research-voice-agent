@@ -1,8 +1,6 @@
-import { Redis } from '@upstash/redis'
 import { AlertCircle } from 'lucide-react'
 import { Interview } from './Interview'
-
-const redis = Redis.fromEnv()
+import { getSession, getUserUsageSeconds, getProject } from '@/lib/db'
 
 interface Session {
     projectId: string
@@ -23,7 +21,7 @@ export default async function InterviewPage({
     params: Promise<{ sessionId: string }>
 }) {
     const { sessionId } = await params
-    const session = await redis.get<Session>(`session:${sessionId}`)
+    const session = await getSession<Session>(sessionId)
 
     if (!session) {
         return (
@@ -44,8 +42,7 @@ export default async function InterviewPage({
 
     const capSeconds = parseInt(process.env.ELEVENLABS_USAGE_CAP_SECONDS ?? '1800')
     if (session.creatorId) {
-        const usedSeconds =
-            (await redis.get<number>(`user:${session.creatorId}:usage:seconds`)) ?? 0
+        const usedSeconds = await getUserUsageSeconds(session.creatorId)
         if (usedSeconds >= capSeconds) {
             return (
                 <main className="min-h-screen flex flex-col items-center justify-center px-6">
@@ -81,7 +78,7 @@ export default async function InterviewPage({
         )
     }
 
-    const project = await redis.get<Project>(`project:${session.projectId}`)
+    const project = await getProject<Project>(session.projectId)
     if (!project) {
         return (
             <main className="min-h-screen flex flex-col items-center justify-center px-6">

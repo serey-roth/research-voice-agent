@@ -43,7 +43,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
             transcript_summary: string
         }) => {
             const { url, status } = await createBrief(params, sessionId)
-            await completeSession(sessionId, { notionUrl: url, notionStatus: status })
+            await completeSession(sessionId, { briefUrl: url, briefStatus: status })
             return url ?? ''
         },
         create_issues: async (params: {

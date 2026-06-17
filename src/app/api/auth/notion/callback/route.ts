@@ -1,8 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
-import { Redis } from '@upstash/redis'
 import { redirect } from 'next/navigation'
-
-const redis = Redis.fromEnv()
+import { setNotionAuth } from '@/lib/db'
 
 export async function GET(request: Request) {
     const { userId } = await auth()
@@ -38,14 +36,12 @@ export async function GET(request: Request) {
     const data = await res.json()
     const accessToken = data.access_token as string
 
-    await Promise.all([
-        redis.set(`user:${userId}:notion_token`, accessToken),
-        redis.set(`user:${userId}:notion_workspace`, data.workspace_name ?? ''),
-        // Store template page so createNotionDatabase knows where to put the new db
-        data.duplicated_template_id
-            ? redis.set(`user:${userId}:notion_template_page_id`, data.duplicated_template_id)
-            : Promise.resolve(),
-    ])
+    await setNotionAuth(
+        userId,
+        accessToken,
+        data.workspace_name ?? '',
+        data.duplicated_template_id ?? undefined
+    )
 
     redirect('/onboarding')
 }

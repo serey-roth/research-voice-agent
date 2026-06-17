@@ -1,14 +1,12 @@
 import { auth } from '@clerk/nextjs/server'
-import { Redis } from '@upstash/redis'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { fetchNotionDatabases, fetchLinearTeams } from '@/app/actions'
+import { getNotionDatabases, getLinearTeams } from '@/app/actions'
 import {
     OnboardingLinearTeamSelector,
     OnboardingNotionDatabaseSelector,
 } from './OnboardingSelectors'
-
-const redis = Redis.fromEnv()
+import { getUserIntegrations } from '@/lib/db'
 
 export const revalidate = 0
 
@@ -16,20 +14,16 @@ export default async function OnboardingPage() {
     const { userId } = await auth()
     if (!userId) redirect('/sign-in')
 
-    const [notionToken, notionDatabaseId, linearToken, linearTeamId] = await Promise.all([
-        redis.get<string>(`user:${userId}:notion_token`),
-        redis.get<string>(`user:${userId}:notion_database_id`),
-        redis.get<string>(`user:${userId}:linear_token`),
-        redis.get<string>(`user:${userId}:linear_team_id`),
-    ])
+    const { notionToken, notionDatabaseId, linearToken, linearTeamId } =
+        await getUserIntegrations(userId)
 
     const notionConnected = !!notionToken && !!notionDatabaseId
     const pendingNotionDbSelection = !!notionToken && !notionDatabaseId
     const linearConnected = !!linearToken
     const pendingLinearTeamSelection = linearConnected && !linearTeamId
 
-    const notionDatabases = pendingNotionDbSelection ? await fetchNotionDatabases(notionToken!) : []
-    const linearTeams = linearToken ? await fetchLinearTeams(linearToken) : []
+    const notionDatabases = pendingNotionDbSelection ? await getNotionDatabases(notionToken!) : []
+    const linearTeams = linearToken ? await getLinearTeams(linearToken) : []
 
     return (
         <main className="min-h-screen flex flex-col items-center justify-center px-6">

@@ -1,8 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
-import { Redis } from '@upstash/redis'
 import { redirect } from 'next/navigation'
-
-const redis = Redis.fromEnv()
+import { setLinearToken } from '@/lib/db'
 
 export async function GET(request: Request) {
     const { userId } = await auth()
@@ -35,6 +33,6 @@ export async function GET(request: Request) {
     const data = await res.json()
     const accessToken = data.access_token as string
 
-    await redis.set(`user:${userId}:linear_token`, accessToken)
+    await setLinearToken(userId, accessToken)
     redirect('/onboarding')
 }

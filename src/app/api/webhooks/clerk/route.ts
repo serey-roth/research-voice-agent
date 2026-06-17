@@ -1,8 +1,6 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
-import { Redis } from '@upstash/redis'
-
-const redis = Redis.fromEnv()
+import { deleteUserData } from '@/lib/db'
 
 export async function POST(req: Request) {
     const secret = process.env.CLERK_WEBHOOK_SECRET
@@ -32,33 +30,7 @@ export async function POST(req: Request) {
     }
 
     if (event.type === 'user.deleted') {
-        const userId = event.data.id
-        const projectIds = await redis.lrange<string>(`projects:user:${userId}`, 0, -1)
-
-        const allSessionIds: string[] = []
-        if (projectIds.length) {
-            const perProject = await Promise.all(
-                projectIds.map((id) => redis.lrange<string>(`sessions:project:${id}`, 0, -1))
-            )
-            allSessionIds.push(...perProject.flat())
-        }
-
-        await Promise.all([
-            redis.del(`projects:user:${userId}`),
-            redis.del(`user:${userId}:notion_token`),
-            redis.del(`user:${userId}:notion_database_id`),
-            redis.del(`user:${userId}:linear_token`),
-            redis.del(`user:${userId}:linear_team_id`),
-            redis.del(`user:${userId}:usage:seconds`),
-            ...projectIds.flatMap((id) => [
-                redis.del(`project:${id}`),
-                redis.del(`sessions:project:${id}`),
-            ]),
-            ...allSessionIds.flatMap((id) => [
-                redis.del(`session:${id}`),
-                redis.del(`session:${id}:duration`),
-            ]),
-        ])
+        await deleteUserData(event.data.id)
     }
 
     return new Response('OK', { status: 200 })

@@ -4,9 +4,26 @@ import { auth } from '@clerk/nextjs/server'
 import { Client } from '@notionhq/client'
 import { LinearClient } from '@linear/sdk'
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js'
-import { Redis } from '@upstash/redis'
-
-const redis = Redis.fromEnv()
+import {
+    getSession,
+    setSession,
+    getProject,
+    setProject,
+    addUserProject,
+    getProjectSessionIds,
+    addProjectSessionIds,
+    getUserUsageSeconds,
+    incrementUserUsageSeconds,
+    setSessionDuration,
+    getNotionCredentials,
+    getNotionToken,
+    getNotionTemplatePageId,
+    setNotionDatabaseId,
+    disconnectNotion as dbDisconnectNotion,
+    getLinearCredentials,
+    setLinearTeamId,
+    disconnectLinear as dbDisconnectLinear,
+} from '@/lib/db'
 
 export type ToolStatus = 'success' | 'failed'
 
@@ -35,30 +52,24 @@ interface IssuesParams {
 }
 
 async function getSessionCreator(sessionId: string): Promise<string | null> {
-    const session = await redis.get<{ creatorId?: string }>(`session:${sessionId}`)
+    const session = await getSession<{ creatorId?: string }>(sessionId)
     return session?.creatorId ?? null
 }
 
 async function getNotionClient(
     userId: string
 ): Promise<{ client: Client; databaseId: string } | null> {
-    const [token, databaseId] = await Promise.all([
-        redis.get<string>(`user:${userId}:notion_token`),
-        redis.get<string>(`user:${userId}:notion_database_id`),
-    ])
-    if (!token || !databaseId) return null
-    return { client: new Client({ auth: token }), databaseId }
+    const creds = await getNotionCredentials(userId)
+    if (!creds) return null
+    return { client: new Client({ auth: creds.token }), databaseId: creds.databaseId }
 }
 
 async function getLinearClient(
     userId: string
 ): Promise<{ client: LinearClient; teamId: string } | null> {
-    const [token, teamId] = await Promise.all([
-        redis.get<string>(`user:${userId}:linear_token`),
-        redis.get<string>(`user:${userId}:linear_team_id`),
-    ])
-    if (!token || !teamId) return null
-    return { client: new LinearClient({ accessToken: token }), teamId }
+    const creds = await getLinearCredentials(userId)
+    if (!creds) return null
+    return { client: new LinearClient({ accessToken: creds.token }), teamId: creds.teamId }
 }
 
 export async function createBrief(
@@ -149,7 +160,7 @@ export async function createIssues(
     try {
         const [creatorId, session] = await Promise.all([
             getSessionCreator(sessionId),
-            redis.get<{ participantEmail?: string }>(`session:${sessionId}`),
+            getSession<{ participantEmail?: string }>(sessionId),
         ])
         if (!creatorId) return { count: 0, url: null, status: 'failed' }
 
@@ -195,22 +206,38 @@ export async function createIssues(
 export async function completeSession(
     sessionId: string,
     data: {
-        notionUrl?: string | null
+        briefUrl?: string | null
+        briefStatus?: ToolStatus
         issuesUrl?: string | null
-        notionStatus?: ToolStatus
         issuesStatus?: ToolStatus
     }
 ) {
-    const session = await redis.get<Record<string, unknown>>(`session:${sessionId}`)
+    const session = await getSession<Record<string, unknown>>(sessionId)
     if (!session) return
-    await redis.set(`session:${sessionId}`, {
-        ...session,
-        status: 'completed',
-        notionUrl: session.notionUrl ?? data.notionUrl ?? null,
-        notionStatus: session.notionStatus ?? data.notionStatus,
-        issuesUrl: session.issuesUrl ?? data.issuesUrl ?? null,
-        issuesStatus: session.issuesStatus ?? data.issuesStatus,
-    })
+
+    const ops: Promise<unknown>[] = [
+        setSession(sessionId, {
+            ...session,
+            status: 'completed',
+            briefUrl: session.briefUrl ?? data.briefUrl ?? null,
+            briefStatus: session.briefStatus ?? data.briefStatus,
+        }),
+    ]
+
+    if ((data.issuesUrl !== undefined || data.issuesStatus !== undefined) && session.projectId) {
+        const project = await getProject<Record<string, unknown>>(session.projectId as string)
+        if (project) {
+            ops.push(
+                setProject(session.projectId as string, {
+                    ...project,
+                    issuesUrl: project.issuesUrl ?? data.issuesUrl ?? null,
+                    issuesStatus: project.issuesStatus ?? data.issuesStatus,
+                })
+            )
+        }
+    }
+
+    await Promise.all(ops)
 }
 
 function heading(text: string) {
@@ -248,8 +275,8 @@ export async function recordUsage(conversationId: string, sessionId: string) {
         if (seconds > 0) {
             // duration stored as its own key — avoids read-modify-write race with completeSession
             await Promise.all([
-                redis.incrby(`user:${creatorId}:usage:seconds`, seconds),
-                redis.set(`session:${sessionId}:duration`, seconds),
+                incrementUserUsageSeconds(creatorId, seconds),
+                setSessionDuration(sessionId, seconds),
             ])
         }
     } catch (err) {
@@ -260,15 +287,15 @@ export async function recordUsage(conversationId: string, sessionId: string) {
 export async function resetSession(sessionId: string): Promise<void> {
     const { userId } = await auth()
     if (!userId) throw new Error('Unauthorized')
-    const session = await redis.get<Record<string, unknown>>(`session:${sessionId}`)
+    const session = await getSession<Record<string, unknown>>(sessionId)
     if (!session || session.creatorId !== userId) return
-    await redis.set(`session:${sessionId}`, { ...session, status: 'pending', error: null })
+    await setSession(sessionId, { ...session, status: 'pending', error: null })
 }
 
 export async function selectNotionDatabase(databaseId: string): Promise<void> {
     const { userId } = await auth()
     if (!userId) throw new Error('Unauthorized')
-    await redis.set(`user:${userId}:notion_database_id`, databaseId)
+    await setNotionDatabaseId(userId, databaseId)
 }
 
 export async function createNotionDatabase(): Promise<{ id: string }> {
@@ -276,8 +303,8 @@ export async function createNotionDatabase(): Promise<{ id: string }> {
     if (!userId) throw new Error('Unauthorized')
 
     const [token, templatePageId] = await Promise.all([
-        redis.get<string>(`user:${userId}:notion_token`),
-        redis.get<string>(`user:${userId}:notion_template_page_id`),
+        getNotionToken(userId),
+        getNotionTemplatePageId(userId),
     ])
     if (!token) throw new Error('Notion not connected')
 
@@ -301,35 +328,26 @@ export async function createNotionDatabase(): Promise<{ id: string }> {
         },
     })
 
-    await redis.set(`user:${userId}:notion_database_id`, db.id)
+    await setNotionDatabaseId(userId, db.id)
     return { id: db.id }
 }
 
 export async function selectLinearTeam(teamId: string): Promise<void> {
     const { userId } = await auth()
     if (!userId) throw new Error('Unauthorized')
-    await redis.set(`user:${userId}:linear_team_id`, teamId)
+    await setLinearTeamId(userId, teamId)
 }
 
 export async function disconnectNotion() {
     const { userId } = await auth()
     if (!userId) return
-
-    await Promise.all([
-        redis.del(`user:${userId}:notion_token`),
-        redis.del(`user:${userId}:notion_database_id`),
-        redis.del(`user:${userId}:notion_template_page_id`),
-    ])
+    await dbDisconnectNotion(userId)
 }
 
 export async function disconnectLinear() {
     const { userId } = await auth()
     if (!userId) return
-
-    await Promise.all([
-        redis.del(`user:${userId}:linear_token`),
-        redis.del(`user:${userId}:linear_team_id`),
-    ])
+    await dbDisconnectLinear(userId)
 }
 
 export async function createProject(
@@ -342,7 +360,7 @@ export async function createProject(
     if (!userId) throw new Error('Unauthorized')
 
     const capSeconds = parseInt(process.env.ELEVENLABS_USAGE_CAP_SECONDS ?? '1800')
-    const usedSeconds = (await redis.get<number>(`user:${userId}:usage:seconds`)) ?? 0
+    const usedSeconds = await getUserUsageSeconds(userId)
     if (usedSeconds >= capSeconds) throw new Error('Usage cap reached')
 
     const projectId = crypto.randomUUID()
@@ -359,15 +377,13 @@ export async function createProject(
             creatorId: userId,
             status: 'pending',
             createdAt: now,
-            notionUrl: null,
-            issuesUrl: null,
-            notionStatus: null,
-            issuesStatus: null,
+            briefUrl: null,
+            briefStatus: null,
         },
     }))
 
     await Promise.all([
-        redis.set(`project:${projectId}`, {
+        setProject(projectId, {
             productName: productName.trim(),
             productDescription: productDescription.trim(),
             researchGoal: researchGoal.trim(),
@@ -376,10 +392,10 @@ export async function createProject(
             updatedAt: now,
             deletedAt: null,
         }),
-        redis.lpush(`projects:user:${userId}`, projectId),
-        ...sessions.map((s) => redis.set(`session:${s.id}`, s.data)),
+        addUserProject(userId, projectId),
+        ...sessions.map((s) => setSession(s.id, s.data)),
         ...(sessions.length
-            ? [redis.lpush(`sessions:project:${projectId}`, ...sessions.map((s) => s.id))]
+            ? [addProjectSessionIds(projectId, ...sessions.map((s) => s.id))]
             : []),
     ])
 
@@ -394,9 +410,9 @@ export async function updateSessionStatus(
     status: 'active' | 'completed' | 'failed',
     error?: string
 ): Promise<void> {
-    const session = await redis.get<Record<string, unknown>>(`session:${sessionId}`)
+    const session = await getSession<Record<string, unknown>>(sessionId)
     if (!session) return
-    await redis.set(`session:${sessionId}`, {
+    await setSession(sessionId, {
         ...session,
         status,
         ...(error !== undefined ? { error } : {}),
@@ -414,9 +430,9 @@ export async function updateProject(
     const { userId } = await auth()
     if (!userId) throw new Error('Unauthorized')
 
-    const project = await redis.get<
+    const project = await getProject<
         Record<string, unknown> & { creatorId: string; deletedAt: string | null }
-    >(`project:${projectId}`)
+    >(projectId)
     if (!project || project.deletedAt) throw new Error('Not found')
     if (project.creatorId !== userId) throw new Error('Forbidden')
 
@@ -425,7 +441,7 @@ export async function updateProject(
 
     if (updates.productDescription !== undefined || updates.researchGoal !== undefined) {
         ops.push(
-            redis.set(`project:${projectId}`, {
+            setProject(projectId, {
                 ...project,
                 ...(updates.productDescription !== undefined && {
                     productDescription: updates.productDescription.trim(),
@@ -441,14 +457,10 @@ export async function updateProject(
     let newSessions: { id: string; participantEmail: string }[] = []
 
     if (updates.participantEmails?.length) {
-        const existingSessionIds = await redis.lrange<string>(
-            `sessions:project:${projectId}`,
-            0,
-            -1
-        )
+        const existingSessionIds = await getProjectSessionIds(projectId)
         const existingSessions = await Promise.all(
             existingSessionIds.map((id) =>
-                redis.get<{ participantEmail: string; deletedAt?: string | null }>(`session:${id}`)
+                getSession<{ participantEmail: string; deletedAt?: string | null }>(id)
             )
         )
         const existingEmails = new Set(
@@ -470,16 +482,14 @@ export async function updateProject(
                 creatorId: userId,
                 status: 'pending',
                 createdAt: now,
-                notionUrl: null,
-                issuesUrl: null,
-                notionStatus: null,
-                issuesStatus: null,
+                briefUrl: null,
+                briefStatus: null,
             },
         }))
 
-        ops.push(...created.map((s) => redis.set(`session:${s.id}`, s.data)))
+        ops.push(...created.map((s) => setSession(s.id, s.data)))
         if (created.length) {
-            ops.push(redis.lpush(`sessions:project:${projectId}`, ...created.map((s) => s.id)))
+            ops.push(addProjectSessionIds(projectId, ...created.map((s) => s.id)))
         }
 
         newSessions = created.map((s) => ({ id: s.id, participantEmail: s.data.participantEmail }))
@@ -493,27 +503,25 @@ export async function deleteProject(projectId: string): Promise<void> {
     const { userId } = await auth()
     if (!userId) throw new Error('Unauthorized')
 
-    const project = await redis.get<{ creatorId: string }>(`project:${projectId}`)
+    const project = await getProject<{ creatorId: string }>(projectId)
     if (!project) throw new Error('Not found')
     if (project.creatorId !== userId) throw new Error('Forbidden')
 
     const now = new Date().toISOString()
-    const sessionIds = await redis.lrange<string>(`sessions:project:${projectId}`, 0, -1)
+    const sessionIds = await getProjectSessionIds(projectId)
     const sessions = (
         await Promise.all(
-            sessionIds.map((id) =>
-                redis.get<object>(`session:${id}`).then((s) => ({ id, data: s }))
-            )
+            sessionIds.map(async (id) => ({ id, data: await getSession<object>(id) }))
         )
     ).filter((s) => s.data !== null)
 
     await Promise.all([
-        redis.set(`project:${projectId}`, { ...project, deletedAt: now, updatedAt: now }),
-        ...sessions.map((s) => redis.set(`session:${s.id}`, { ...s.data, deletedAt: now })),
+        setProject(projectId, { ...project, deletedAt: now, updatedAt: now }),
+        ...sessions.map((s) => setSession(s.id, { ...s.data!, deletedAt: now })),
     ])
 }
 
-export async function fetchNotionDatabases(token: string): Promise<{ id: string; name: string }[]> {
+export async function getNotionDatabases(token: string): Promise<{ id: string; name: string }[]> {
     try {
         const notion = new Client({ auth: token })
         const search = await notion.search({ filter: { value: 'data_source', property: 'object' } })
@@ -536,7 +544,7 @@ export async function fetchNotionDatabases(token: string): Promise<{ id: string;
     }
 }
 
-export async function fetchLinearTeams(token: string): Promise<{ id: string; name: string }[]> {
+export async function getLinearTeams(token: string): Promise<{ id: string; name: string }[]> {
     try {
         const linear = new LinearClient({ accessToken: token })
         const { nodes } = await linear.teams()
