@@ -12,7 +12,8 @@ export async function GET(request: Request) {
     const clientId = process.env.LINEAR_CLIENT_ID
     const clientSecret = process.env.LINEAR_CLIENT_SECRET
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
-    if (!clientId || !clientSecret || !appUrl) return new Response('Linear integration is not configured', { status: 500 })
+    if (!clientId || !clientSecret || !appUrl)
+        return new Response('Linear integration is not configured', { status: 500 })
 
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')

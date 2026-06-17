@@ -10,7 +10,7 @@ const redis = Redis.fromEnv()
 
 export type ToolStatus = 'success' | 'failed'
 
-interface NotionBriefParams {
+interface BriefParams {
     product_name: string
     product_description: string
     research_goal: string
@@ -28,7 +28,7 @@ interface PainPoint {
     priority: 1 | 2 | 3 | 4
 }
 
-interface TicketsParams {
+interface IssuesParams {
     product_name: string
     pain_points: PainPoint[]
     date: string
@@ -61,8 +61,8 @@ async function getLinearClient(
     return { client: new LinearClient({ accessToken: token }), teamId }
 }
 
-export async function createNotionBrief(
-    params: NotionBriefParams,
+export async function createBrief(
+    params: BriefParams,
     sessionId: string
 ): Promise<{ url: string | null; status: ToolStatus }> {
     try {
@@ -139,8 +139,8 @@ async function getOrCreateProject(
     return project.id
 }
 
-export async function createTickets(
-    params: TicketsParams,
+export async function createIssues(
+    params: IssuesParams,
     sessionId: string
 ): Promise<{ count: number; url: string | null; status: ToolStatus }> {
     try {
@@ -195,9 +195,9 @@ export async function completeSession(
     sessionId: string,
     data: {
         notionUrl?: string | null
-        ticketsUrl?: string | null
+        issuesUrl?: string | null
         notionStatus?: ToolStatus
-        ticketsStatus?: ToolStatus
+        issuesStatus?: ToolStatus
     }
 ) {
     const session = await redis.get<Record<string, unknown>>(`session:${sessionId}`)
@@ -207,8 +207,8 @@ export async function completeSession(
         status: 'completed',
         notionUrl: session.notionUrl ?? data.notionUrl ?? null,
         notionStatus: session.notionStatus ?? data.notionStatus,
-        ticketsUrl: session.ticketsUrl ?? data.ticketsUrl ?? null,
-        ticketsStatus: session.ticketsStatus ?? data.ticketsStatus,
+        issuesUrl: session.issuesUrl ?? data.issuesUrl ?? null,
+        issuesStatus: session.issuesStatus ?? data.issuesStatus,
     })
 }
 
@@ -273,5 +273,196 @@ export async function disconnectLinear() {
     await Promise.all([
         redis.del(`user:${userId}:linear_token`),
         redis.del(`user:${userId}:linear_team_id`),
+    ])
+}
+
+export async function createProject(
+    productName: string,
+    productDescription: string,
+    researchGoal: string,
+    seedQuestions: string[],
+    participantEmails: string[]
+): Promise<{ projectId: string; sessions: { id: string; participantEmail: string }[] }> {
+    const { userId } = await auth()
+    if (!userId) throw new Error('Unauthorized')
+
+    const capSeconds = parseInt(process.env.ELEVENLABS_USAGE_CAP_SECONDS ?? '1800')
+    const usedSeconds = (await redis.get<number>(`user:${userId}:usage:seconds`)) ?? 0
+    if (usedSeconds >= capSeconds) throw new Error('Usage cap reached')
+
+    const projectId = crypto.randomUUID()
+    const now = new Date().toISOString()
+
+    const emails = [
+        ...new Set(participantEmails.map((e) => e.trim().toLowerCase()).filter(Boolean)),
+    ]
+    const sessions = emails.map((email) => ({
+        id: crypto.randomUUID(),
+        data: {
+            projectId,
+            participantEmail: email,
+            creatorId: userId,
+            status: 'pending',
+            createdAt: now,
+            notionUrl: null,
+            issuesUrl: null,
+            notionStatus: null,
+            issuesStatus: null,
+        },
+    }))
+
+    await Promise.all([
+        redis.set(`project:${projectId}`, {
+            productName: productName.trim(),
+            productDescription: productDescription.trim(),
+            researchGoal: researchGoal.trim(),
+            seedQuestions: seedQuestions.map((q) => q.trim()).filter(Boolean),
+            creatorId: userId,
+            createdAt: now,
+            updatedAt: now,
+            deletedAt: null,
+        }),
+        redis.lpush(`projects:user:${userId}`, projectId),
+        ...sessions.map((s) => redis.set(`session:${s.id}`, s.data)),
+        ...(sessions.length
+            ? [redis.lpush(`sessions:project:${projectId}`, ...sessions.map((s) => s.id))]
+            : []),
+    ])
+
+    return {
+        projectId,
+        sessions: sessions.map((s) => ({ id: s.id, participantEmail: s.data.participantEmail })),
+    }
+}
+
+export async function updateSessionStatus(
+    sessionId: string,
+    status: 'active' | 'completed' | 'failed',
+    error?: string
+): Promise<void> {
+    const session = await redis.get<Record<string, unknown>>(`session:${sessionId}`)
+    if (!session) return
+    await redis.set(`session:${sessionId}`, {
+        ...session,
+        status,
+        ...(error !== undefined ? { error } : {}),
+    })
+}
+
+export async function updateProject(
+    projectId: string,
+    updates: {
+        productDescription?: string
+        researchGoal?: string
+        seedQuestions?: string[]
+        participantEmails?: string[]
+    }
+): Promise<{ sessions: { id: string; participantEmail: string }[] }> {
+    const { userId } = await auth()
+    if (!userId) throw new Error('Unauthorized')
+
+    const project = await redis.get<
+        Record<string, unknown> & { creatorId: string; deletedAt: string | null }
+    >(`project:${projectId}`)
+    if (!project || project.deletedAt) throw new Error('Not found')
+    if (project.creatorId !== userId) throw new Error('Forbidden')
+
+    const now = new Date().toISOString()
+    const ops: Promise<unknown>[] = []
+
+    if (
+        updates.productDescription !== undefined ||
+        updates.researchGoal !== undefined ||
+        updates.seedQuestions !== undefined
+    ) {
+        ops.push(
+            redis.set(`project:${projectId}`, {
+                ...project,
+                ...(updates.productDescription !== undefined && {
+                    productDescription: updates.productDescription.trim(),
+                }),
+                ...(updates.researchGoal !== undefined && {
+                    researchGoal: updates.researchGoal.trim(),
+                }),
+                ...(updates.seedQuestions !== undefined && {
+                    seedQuestions: updates.seedQuestions.map((q) => q.trim()).filter(Boolean),
+                }),
+                updatedAt: now,
+            })
+        )
+    }
+
+    let newSessions: { id: string; participantEmail: string }[] = []
+
+    if (updates.participantEmails?.length) {
+        const existingSessionIds = await redis.lrange<string>(
+            `sessions:project:${projectId}`,
+            0,
+            -1
+        )
+        const existingSessions = await Promise.all(
+            existingSessionIds.map((id) =>
+                redis.get<{ participantEmail: string; deletedAt?: string | null }>(`session:${id}`)
+            )
+        )
+        const existingEmails = new Set(
+            existingSessions
+                .filter((s) => s && !s.deletedAt)
+                .map((s) => s!.participantEmail.toLowerCase())
+        )
+        const emails = [
+            ...new Set(
+                updates.participantEmails.map((e) => e.trim().toLowerCase()).filter(Boolean)
+            ),
+        ].filter((e) => !existingEmails.has(e))
+
+        const created = emails.map((email) => ({
+            id: crypto.randomUUID(),
+            data: {
+                projectId,
+                participantEmail: email,
+                creatorId: userId,
+                status: 'pending',
+                createdAt: now,
+                notionUrl: null,
+                issuesUrl: null,
+                notionStatus: null,
+                issuesStatus: null,
+            },
+        }))
+
+        ops.push(...created.map((s) => redis.set(`session:${s.id}`, s.data)))
+        if (created.length) {
+            ops.push(redis.lpush(`sessions:project:${projectId}`, ...created.map((s) => s.id)))
+        }
+
+        newSessions = created.map((s) => ({ id: s.id, participantEmail: s.data.participantEmail }))
+    }
+
+    await Promise.all(ops)
+    return { sessions: newSessions }
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+    const { userId } = await auth()
+    if (!userId) throw new Error('Unauthorized')
+
+    const project = await redis.get<{ creatorId: string }>(`project:${projectId}`)
+    if (!project) throw new Error('Not found')
+    if (project.creatorId !== userId) throw new Error('Forbidden')
+
+    const now = new Date().toISOString()
+    const sessionIds = await redis.lrange<string>(`sessions:project:${projectId}`, 0, -1)
+    const sessions = (
+        await Promise.all(
+            sessionIds.map((id) =>
+                redis.get<object>(`session:${id}`).then((s) => ({ id, data: s }))
+            )
+        )
+    ).filter((s) => s.data !== null)
+
+    await Promise.all([
+        redis.set(`project:${projectId}`, { ...project, deletedAt: now, updatedAt: now }),
+        ...sessions.map((s) => redis.set(`session:${s.id}`, { ...s.data, deletedAt: now })),
     ])
 }

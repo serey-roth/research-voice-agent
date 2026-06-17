@@ -7,7 +7,8 @@ export async function GET() {
 
     const clientId = process.env.NOTION_CLIENT_ID
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
-    if (!clientId || !appUrl) return new Response('Notion integration is not configured', { status: 500 })
+    if (!clientId || !appUrl)
+        return new Response('Notion integration is not configured', { status: 500 })
 
     const params = new URLSearchParams({
         client_id: clientId,
