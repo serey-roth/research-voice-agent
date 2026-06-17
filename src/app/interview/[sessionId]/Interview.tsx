@@ -7,7 +7,6 @@ interface Session {
     productName: string
     productDescription: string
     researchGoal: string
-    seedQuestions: string[]
     participantEmail: string
 }
 

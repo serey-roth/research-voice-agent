@@ -16,7 +16,6 @@ interface Session {
     productName: string
     productDescription: string
     researchGoal: string
-    seedQuestions: string[]
     participantEmail: string
 }
 
@@ -124,7 +123,6 @@ export function Conversation({ session, sessionId }: { session: Session; session
                     product_name: session.productName,
                     product_description: session.productDescription,
                     research_goal: session.researchGoal,
-                    seed_questions: session.seedQuestions.join(', '),
                     participant_email: session.participantEmail,
                     current_date: new Date().toISOString().split('T')[0],
                 },

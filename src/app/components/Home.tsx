@@ -15,7 +15,6 @@ interface FormFields {
     productName: string
     productDescription: string
     researchGoal: string
-    seedQuestions: string[]
     participantEmails: string[]
 }
 
@@ -23,7 +22,6 @@ const DEFAULT_FORM: FormFields = {
     productName: '',
     productDescription: '',
     researchGoal: '',
-    seedQuestions: ['', '', ''],
     participantEmails: [''],
 }
 
@@ -34,7 +32,6 @@ function projectToForm(project: Project): FormFields {
         productName: project.productName,
         productDescription: project.productDescription,
         researchGoal: project.researchGoal,
-        seedQuestions: project.seedQuestions.length > 0 ? project.seedQuestions : [''],
         participantEmails: [''],
     }
 }
@@ -119,7 +116,6 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                 form.productName,
                 form.productDescription,
                 form.researchGoal,
-                form.seedQuestions.filter((q) => q.trim()),
                 form.participantEmails.filter((e) => e.trim())
             )
             router.refresh()
@@ -149,7 +145,6 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                     ? {
                           productDescription: form.productDescription,
                           researchGoal: form.researchGoal,
-                          seedQuestions: form.seedQuestions,
                       }
                     : {}),
                 ...(newEmails.length ? { participantEmails: newEmails } : {}),
@@ -162,7 +157,6 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                               ? {
                                     productDescription: form.productDescription,
                                     researchGoal: form.researchGoal,
-                                    seedQuestions: form.seedQuestions,
                                 }
                               : {}),
                           sessions: [
@@ -353,21 +347,6 @@ function ViewPanel({ project }: { project: Project }) {
 
             <div className="flex flex-col gap-2">
                 <p className="text-[11px] font-medium text-muted uppercase tracking-wide">
-                    Seed questions
-                </p>
-                {project.seedQuestions.filter(Boolean).length > 0 ? (
-                    project.seedQuestions.filter(Boolean).map((q, i) => (
-                        <p key={i} className="text-[13px] text-ink">
-                            {q}
-                        </p>
-                    ))
-                ) : (
-                    <p className="text-[13px] text-muted italic">None added</p>
-                )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-                <p className="text-[11px] font-medium text-muted uppercase tracking-wide">
                     Participants
                 </p>
                 {project.sessions.length === 0 ? (
@@ -538,6 +517,11 @@ function ProjectFormBody({
                 <label className="text-[13px] font-medium text-ink">
                     Research goal {mode === 'create' && <span className="text-red-400">*</span>}
                 </label>
+                {canEditFields && (
+                    <p className="text-[12px] text-muted -mt-0.5">
+                        Be specific — the more focused the goal, the sharper the interview. 
+                    </p>
+                )}
                 {canEditFields ? (
                     <textarea
                         required={mode === 'create'}
@@ -549,73 +533,6 @@ function ProjectFormBody({
                     />
                 ) : (
                     <p className="text-[13px] text-ink leading-relaxed">{form.researchGoal}</p>
-                )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-medium text-ink">Seed questions</label>
-                {mode === 'create' && (
-                    <p className="text-[12px] text-muted -mt-1">
-                        The AI will probe and follow up — these are starting points only.
-                    </p>
-                )}
-                {canEditFields ? (
-                    <>
-                        {form.seedQuestions.map((q, i) => (
-                            <div key={i} className="flex gap-2 items-center">
-                                <input
-                                    type="text"
-                                    value={q}
-                                    onChange={(e) => {
-                                        const updated = [...form.seedQuestions]
-                                        updated[i] = e.target.value
-                                        onChange({ ...form, seedQuestions: updated })
-                                    }}
-                                    className="border border-neutral-200 rounded-[6px] px-3 py-2 text-sm text-ink placeholder:text-muted bg-bg flex-1 focus:outline-none focus:border-primary transition-colors"
-                                    placeholder={`Question ${i + 1}`}
-                                />
-                                {form.seedQuestions.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            onChange({
-                                                ...form,
-                                                seedQuestions: form.seedQuestions.filter(
-                                                    (_, j) => j !== i
-                                                ),
-                                            })
-                                        }
-                                        aria-label="Remove"
-                                        className="text-muted hover:text-ink transition-colors w-6 h-6 flex items-center justify-center shrink-0 outline-none"
-                                    >
-                                        <X size={12} />
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        {form.seedQuestions.length < 5 && (
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    onChange({
-                                        ...form,
-                                        seedQuestions: [...form.seedQuestions, ''],
-                                    })
-                                }
-                                className="text-[13px] text-primary hover:text-primary-hover transition-colors self-start outline-none"
-                            >
-                                + Add question
-                            </button>
-                        )}
-                    </>
-                ) : form.seedQuestions.filter(Boolean).length > 0 ? (
-                    form.seedQuestions.filter(Boolean).map((q, i) => (
-                        <p key={i} className="text-[13px] text-ink">
-                            {q}
-                        </p>
-                    ))
-                ) : (
-                    <p className="text-[13px] text-muted italic">None added</p>
                 )}
             </div>
 

@@ -15,7 +15,6 @@ interface Project {
     productName: string
     productDescription: string
     researchGoal: string
-    seedQuestions: string[]
 }
 
 export default async function InterviewPage({
@@ -105,7 +104,6 @@ export default async function InterviewPage({
                         productName: project.productName,
                         productDescription: project.productDescription,
                         researchGoal: project.researchGoal,
-                        seedQuestions: project.seedQuestions,
                         participantEmail: session.participantEmail,
                     }}
                     sessionId={sessionId}

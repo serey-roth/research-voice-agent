@@ -9,7 +9,6 @@ interface Project {
     productName: string
     productDescription: string
     researchGoal: string
-    seedQuestions: string[]
     createdAt: string
     updatedAt: string
     deletedAt: string | null
@@ -68,7 +67,6 @@ export default async function HomePage() {
                       productName: project.productName,
                       productDescription: project.productDescription,
                       researchGoal: project.researchGoal,
-                      seedQuestions: project.seedQuestions,
                       createdAt: project.createdAt,
                       sessions,
                   }

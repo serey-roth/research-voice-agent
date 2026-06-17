@@ -336,7 +336,6 @@ export async function createProject(
     productName: string,
     productDescription: string,
     researchGoal: string,
-    seedQuestions: string[],
     participantEmails: string[]
 ): Promise<{ projectId: string; sessions: { id: string; participantEmail: string }[] }> {
     const { userId } = await auth()
@@ -372,7 +371,6 @@ export async function createProject(
             productName: productName.trim(),
             productDescription: productDescription.trim(),
             researchGoal: researchGoal.trim(),
-            seedQuestions: seedQuestions.map((q) => q.trim()).filter(Boolean),
             creatorId: userId,
             createdAt: now,
             updatedAt: now,
@@ -410,7 +408,6 @@ export async function updateProject(
     updates: {
         productDescription?: string
         researchGoal?: string
-        seedQuestions?: string[]
         participantEmails?: string[]
     }
 ): Promise<{ sessions: { id: string; participantEmail: string }[] }> {
@@ -428,8 +425,7 @@ export async function updateProject(
 
     if (
         updates.productDescription !== undefined ||
-        updates.researchGoal !== undefined ||
-        updates.seedQuestions !== undefined
+        updates.researchGoal !== undefined
     ) {
         ops.push(
             redis.set(`project:${projectId}`, {
@@ -439,9 +435,6 @@ export async function updateProject(
                 }),
                 ...(updates.researchGoal !== undefined && {
                     researchGoal: updates.researchGoal.trim(),
-                }),
-                ...(updates.seedQuestions !== undefined && {
-                    seedQuestions: updates.seedQuestions.map((q) => q.trim()).filter(Boolean),
                 }),
                 updatedAt: now,
             })

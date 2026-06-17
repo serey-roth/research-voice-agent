@@ -21,7 +21,6 @@ export interface Project {
     productName: string
     productDescription: string
     researchGoal: string
-    seedQuestions: string[]
     createdAt: string
     sessions: Session[]
 }

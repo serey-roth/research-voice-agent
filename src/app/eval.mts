@@ -1,6 +1,5 @@
 import 'dotenv/config'
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js'
-import { AGENT_ID } from './prompt.mts'
 
 const elevenlabs = new ElevenLabsClient()
 
@@ -24,8 +23,7 @@ const vars = {
         'An AI chatbot that generates personalised recipes based on your dietary preferences and goals.',
     research_goal:
         'Understand why users stop using Brekkie after trying it and what would make them come back',
-    seed_questions:
-        'Walk me through the last time you used Brekkie — what were you trying to do?, What made you stop using it?, What would have to change for you to come back to it regularly?',
+
     participant_email: 'test@example.com',
     current_date: new Date().toISOString().split('T')[0],
 }
@@ -457,7 +455,7 @@ async function runEval() {
     }
 
     console.log('\nRunning tests…')
-    const invocation = await elevenlabs.conversationalAi.agents.runTests(AGENT_ID, {
+    const invocation = await elevenlabs.conversationalAi.agents.runTests(process.env.ELEVENLABS_AGENT_ID!, {
         tests: testIds.map((id) => ({ testId: id })),
     })
     console.log(`  Invocation: ${invocation.id}`)
