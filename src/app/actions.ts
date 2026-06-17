@@ -298,7 +298,7 @@ export async function createNotionDatabase(): Promise<{ id: string }> {
                 'Participant Email': { email: {} },
                 'Interview Date': { date: {} },
             },
-        }
+        },
     })
 
     await redis.set(`user:${userId}:notion_database_id`, db.id)
@@ -423,10 +423,7 @@ export async function updateProject(
     const now = new Date().toISOString()
     const ops: Promise<unknown>[] = []
 
-    if (
-        updates.productDescription !== undefined ||
-        updates.researchGoal !== undefined
-    ) {
+    if (updates.productDescription !== undefined || updates.researchGoal !== undefined) {
         ops.push(
             redis.set(`project:${projectId}`, {
                 ...project,
@@ -520,12 +517,17 @@ export async function fetchNotionDatabases(token: string): Promise<{ id: string;
     try {
         const notion = new Client({ auth: token })
         const search = await notion.search({ filter: { value: 'data_source', property: 'object' } })
-        type DataSourceResult = { id: string; parent?: { type: string; database_id?: string }; title?: { plain_text: string }[] }
+        type DataSourceResult = {
+            id: string
+            parent?: { type: string; database_id?: string }
+            title?: { plain_text: string }[]
+        }
         return search.results.map((r) => {
             const src = r as unknown as DataSourceResult
-            const id = src.parent?.type === 'database_id' && src.parent.database_id
-                ? src.parent.database_id
-                : src.id
+            const id =
+                src.parent?.type === 'database_id' && src.parent.database_id
+                    ? src.parent.database_id
+                    : src.id
             const name = src.title?.[0]?.plain_text ?? 'Untitled'
             return { id, name }
         })

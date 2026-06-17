@@ -97,7 +97,11 @@ export function ProjectRow({
                                     <button
                                         onClick={canEdit ? onEdit : undefined}
                                         disabled={!canEdit}
-                                        title={!canEdit ? 'Cannot edit after interviews have started' : undefined}
+                                        title={
+                                            !canEdit
+                                                ? 'Cannot edit after interviews have started'
+                                                : undefined
+                                        }
                                         className="text-left px-3 py-1.5 text-[13px] text-ink hover:bg-neutral-50 transition-colors disabled:text-muted disabled:cursor-not-allowed disabled:hover:bg-transparent"
                                     >
                                         Edit project
@@ -128,7 +132,11 @@ export function ProjectRow({
                             <div className="flex items-center gap-2.5 shrink-0">
                                 <StatusBadge
                                     status={session.status}
-                                    title={session.status === 'failed' && session.error ? session.error : undefined}
+                                    title={
+                                        session.status === 'failed' && session.error
+                                            ? session.error
+                                            : undefined
+                                    }
                                 />
                                 {session.status === 'pending' && (
                                     <button

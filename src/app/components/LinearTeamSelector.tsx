@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { selectLinearTeam } from '@/app/actions'
 
-
 interface Team {
     id: string
     name: string
@@ -56,7 +55,10 @@ export function LinearTeamSelector({
                     className="w-full flex items-center gap-2 border border-neutral-200 rounded-[6px] px-3 py-1.5 text-[13px] text-ink bg-bg hover:border-neutral-300 focus:outline-none focus:border-primary transition-colors"
                 >
                     <span className="flex-1 text-left">{selected?.name}</span>
-                    <ChevronDown size={13} className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                        size={13}
+                        className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`}
+                    />
                 </button>
 
                 {open && (
@@ -65,14 +67,23 @@ export function LinearTeamSelector({
                             <button
                                 key={t.id}
                                 type="button"
-                                onClick={() => { setSelectedId(t.id); setOpen(false) }}
+                                onClick={() => {
+                                    setSelectedId(t.id)
+                                    setOpen(false)
+                                }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-ink hover:bg-surface transition-colors text-left"
                             >
                                 <span className="flex-1">{t.name}</span>
                                 {t.id === currentId && t.id !== selectedId && (
                                     <span className="text-[10px] text-muted">Current</span>
                                 )}
-                                {t.id === selectedId && <Check size={12} className="text-primary shrink-0" strokeWidth={2.5} />}
+                                {t.id === selectedId && (
+                                    <Check
+                                        size={12}
+                                        className="text-primary shrink-0"
+                                        strokeWidth={2.5}
+                                    />
+                                )}
                             </button>
                         ))}
                     </div>

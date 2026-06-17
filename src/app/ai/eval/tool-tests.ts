@@ -3,7 +3,7 @@ import { vars, realConversation } from './shared.ts'
 
 async function getToolId(
     elevenlabs: ElevenLabsClient,
-    name: string,
+    name: string
 ): Promise<{ id: string; type: 'client' | 'system' }> {
     const { tools } = await elevenlabs.conversationalAi.tools.list()
     const match = tools.find((t) => {

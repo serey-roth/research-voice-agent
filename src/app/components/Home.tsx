@@ -257,7 +257,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                             <button
                                 onClick={startEditMode}
                                 title={
-                                    !viewedProject.sessions.every(s => s.status === 'pending')
+                                    !viewedProject.sessions.every((s) => s.status === 'pending')
                                         ? 'Project fields locked — interviews have started'
                                         : undefined
                                 }
@@ -284,7 +284,10 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                         <ProjectFormBody
                             mode="edit"
                             form={form}
-                            onChange={(f) => { setForm(f); setFormError(null) }}
+                            onChange={(f) => {
+                                setForm(f)
+                                setFormError(null)
+                            }}
                             existingSessions={viewedProject.sessions}
                             canEditFields={viewedProject.sessions.every(
                                 (s) => s.status === 'pending'
@@ -298,7 +301,10 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                         <ProjectFormBody
                             mode="create"
                             form={form}
-                            onChange={(f) => { setForm(f); setFormError(null) }}
+                            onChange={(f) => {
+                                setForm(f)
+                                setFormError(null)
+                            }}
                             onSubmit={handleCreate}
                             loading={loading}
                             error={formError}
@@ -360,7 +366,11 @@ function ViewPanel({ project }: { project: Project }) {
                             <div className="flex items-center gap-2.5 shrink-0">
                                 <StatusBadge
                                     status={session.status}
-                                    title={session.status === 'failed' && session.error ? session.error : undefined}
+                                    title={
+                                        session.status === 'failed' && session.error
+                                            ? session.error
+                                            : undefined
+                                    }
                                 />
                                 {session.status === 'pending' && (
                                     <button
@@ -519,7 +529,7 @@ function ProjectFormBody({
                 </label>
                 {canEditFields && (
                     <p className="text-[12px] text-muted -mt-0.5">
-                        Be specific — the more focused the goal, the sharper the interview. 
+                        Be specific — the more focused the goal, the sharper the interview.
                     </p>
                 )}
                 {canEditFields ? (

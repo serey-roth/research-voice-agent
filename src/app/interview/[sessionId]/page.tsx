@@ -69,7 +69,9 @@ export default async function InterviewPage({
                 </header>
                 <div className="flex flex-1 flex-col items-center justify-center px-6 pb-16">
                     <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-                        <p className="text-lg font-semibold text-ink tracking-tight">Thanks for your time.</p>
+                        <p className="text-lg font-semibold text-ink tracking-tight">
+                            Thanks for your time.
+                        </p>
                         <p className="text-[13px] text-muted leading-relaxed">
                             Your responses have been recorded.
                         </p>

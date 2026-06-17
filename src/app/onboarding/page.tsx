@@ -3,7 +3,10 @@ import { Redis } from '@upstash/redis'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { fetchNotionDatabases, fetchLinearTeams } from '@/app/actions'
-import { OnboardingLinearTeamSelector, OnboardingNotionDatabaseSelector } from './OnboardingSelectors'
+import {
+    OnboardingLinearTeamSelector,
+    OnboardingNotionDatabaseSelector,
+} from './OnboardingSelectors'
 
 const redis = Redis.fromEnv()
 
@@ -76,7 +79,9 @@ export default async function OnboardingPage() {
                         )}
                         {pendingNotionDbSelection && (
                             <div className="flex flex-col gap-2">
-                                <p className="text-[13px] text-muted">Select a database for briefs:</p>
+                                <p className="text-[13px] text-muted">
+                                    Select a database for briefs:
+                                </p>
                                 <OnboardingNotionDatabaseSelector databases={notionDatabases} />
                             </div>
                         )}
@@ -138,7 +143,9 @@ export default async function OnboardingPage() {
                             Continue
                         </Link>
                     ) : pendingNotionDbSelection ? (
-                        <p className="text-[13px] text-muted">Select a Notion database to continue.</p>
+                        <p className="text-[13px] text-muted">
+                            Select a Notion database to continue.
+                        </p>
                     ) : pendingLinearTeamSelection ? (
                         <p className="text-[13px] text-muted">Select a Linear team to continue.</p>
                     ) : (

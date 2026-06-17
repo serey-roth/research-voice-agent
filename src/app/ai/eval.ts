@@ -11,9 +11,9 @@ const filter = process.argv[2] as Filter | undefined
 
 async function runEval() {
     const allTests = [
-        ...((!filter || filter === 'llm') ? llmTests : []),
-        ...((!filter || filter === 'simulation') ? simulationTests : []),
-        ...((!filter || filter === 'tool') ? await buildToolTests(elevenlabs) : []),
+        ...(!filter || filter === 'llm' ? llmTests : []),
+        ...(!filter || filter === 'simulation' ? simulationTests : []),
+        ...(!filter || filter === 'tool' ? await buildToolTests(elevenlabs) : []),
     ]
 
     console.log('Creating tests…')
@@ -31,9 +31,12 @@ async function runEval() {
     }
 
     console.log('\nRunning tests…')
-    const invocation = await elevenlabs.conversationalAi.agents.runTests(process.env.ELEVENLABS_AGENT_ID, {
-        tests: testIds.map((id) => ({ testId: id })),
-    })
+    const invocation = await elevenlabs.conversationalAi.agents.runTests(
+        process.env.ELEVENLABS_AGENT_ID,
+        {
+            tests: testIds.map((id) => ({ testId: id })),
+        }
+    )
     console.log(`  Invocation: ${invocation.id}`)
 
     console.log('\nWaiting for results…')

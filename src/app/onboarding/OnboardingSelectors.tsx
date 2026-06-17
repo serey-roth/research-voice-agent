@@ -16,7 +16,12 @@ interface Team {
 
 export function OnboardingNotionDatabaseSelector({ databases }: { databases: Database[] }) {
     const router = useRouter()
-    return <NotionDatabaseSelector databases={databases} onSuccess={() => router.push('/onboarding')} />
+    return (
+        <NotionDatabaseSelector
+            databases={databases}
+            onSuccess={() => router.push('/onboarding')}
+        />
+    )
 }
 
 export function OnboardingLinearTeamSelector({ teams }: { teams: Team[] }) {
