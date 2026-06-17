@@ -19,7 +19,7 @@ const tools: ElevenLabs.PromptAgentApiModelOutputToolsItem[] = [
     },
     {
         type: 'client',
-        name: 'create_notion_brief',
+        name: 'create_brief',
         description: 'Create a structured Notion research brief after the interview is complete.',
         expectsResponse: true,
         parameters: {
@@ -71,7 +71,7 @@ const tools: ElevenLabs.PromptAgentApiModelOutputToolsItem[] = [
     },
     {
         type: 'client',
-        name: 'create_tickets',
+        name: 'create_issues',
         description: 'Create Linear issues for each pain point surfaced during the interview.',
         expectsResponse: true,
         parameters: {
@@ -148,8 +148,8 @@ async function updateAgent() {
     // calling real APIs (mockingStrategy: 'all' uses these when no mock matches)
     const { tools: workspaceTools } = await elevenlabs.conversationalAi.tools.list()
     const mockValues: Record<string, string> = {
-        create_notion_brief: 'https://notion.so/test-brief-123',
-        create_tickets: JSON.stringify({ count: 2, url: 'https://linear.app/test' }),
+        create_brief: 'https://notion.so/test-brief-123',
+        create_issues: JSON.stringify({ count: 2, url: 'https://linear.app/test' }),
     }
     for (const wt of workspaceTools) {
         const cfg = wt.toolConfig
