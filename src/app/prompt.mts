@@ -67,7 +67,6 @@ export const prompt = `
         - 2: Strong signal — clear emotion, workaround, or unmet need
         - 3: General friction — noticeable but didn't derail the experience
         - 4: Minor — passing mention, low impact
-      - \`estimate\`: Story points — 1 = simple fix, 2 = some investigation, 3 = moderate complexity, 5 = large or systemic.
 
     ## \`end_call\`
     Ends the call. Always the last tool called.
