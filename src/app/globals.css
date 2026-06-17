@@ -21,3 +21,7 @@ body {
     outline: 2px solid oklch(0.4 0.13 20);
     outline-offset: 2px;
 }
+
+a:hover {
+    text-decoration: underline;
+}
