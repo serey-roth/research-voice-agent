@@ -46,6 +46,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
     const [panelMode, setPanelMode] = useState<PanelMode>('new')
     const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const [formError, setFormError] = useState<string | null>(null)
     const [form, setForm] = useState<FormFields>(DEFAULT_FORM)
     const [viewedProject, setViewedProject] = useState<Project | null>(null)
     const [viewEditMode, setViewEditMode] = useState(false)
@@ -59,6 +60,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
         setViewedProject(null)
         setPanelMode('new')
         setViewEditMode(false)
+        setFormError(null)
     }
 
     function openNewProject() {
@@ -100,13 +102,18 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
 
     async function handleDelete(projectId: string) {
         setDeleteConfirmId(null)
-        await deleteProject(projectId)
-        closePanel()
-        router.refresh()
+        try {
+            await deleteProject(projectId)
+            closePanel()
+            router.refresh()
+        } catch {
+            // deletion failure is rare — silently leave the modal closed
+        }
     }
 
     async function handleCreate() {
         setLoading(true)
+        setFormError(null)
         try {
             await createProject(
                 form.productName,
@@ -117,6 +124,13 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
             )
             router.refresh()
             closePanel()
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : ''
+            setFormError(
+                msg === 'Usage cap reached'
+                    ? "You've reached your usage limit. Visit Settings to learn more."
+                    : 'Something went wrong. Please try again.'
+            )
         } finally {
             setLoading(false)
         }
@@ -125,6 +139,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
     async function handleSave() {
         if (!currentProjectId || !viewedProject) return
         setLoading(true)
+        setFormError(null)
         try {
             const canEditFields = viewedProject.sessions.every((s) => s.status === 'pending')
             const newEmails = form.participantEmails.filter((e) => e.trim())
@@ -168,6 +183,8 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
             setViewEditMode(false)
             setForm(DEFAULT_FORM)
             router.refresh()
+        } catch {
+            setFormError('Something went wrong. Please try again.')
         } finally {
             setLoading(false)
         }
@@ -273,7 +290,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                         <ProjectFormBody
                             mode="edit"
                             form={form}
-                            onChange={setForm}
+                            onChange={(f) => { setForm(f); setFormError(null) }}
                             existingSessions={viewedProject.sessions}
                             canEditFields={viewedProject.sessions.every(
                                 (s) => s.status === 'pending'
@@ -281,14 +298,16 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                             onSubmit={handleSave}
                             onCancel={cancelEdit}
                             loading={loading}
+                            error={formError}
                         />
                     ) : (
                         <ProjectFormBody
                             mode="create"
                             form={form}
-                            onChange={setForm}
+                            onChange={(f) => { setForm(f); setFormError(null) }}
                             onSubmit={handleCreate}
                             loading={loading}
+                            error={formError}
                         />
                     )}
                 </div>
@@ -441,6 +460,7 @@ interface ProjectFormBodyProps {
     onSubmit: () => void
     onCancel?: () => void
     loading: boolean
+    error?: string | null
 }
 
 function ProjectFormBody({
@@ -452,6 +472,7 @@ function ProjectFormBody({
     onSubmit,
     onCancel,
     loading,
+    error,
 }: ProjectFormBodyProps) {
     function isEmailDupe(email: string, index: number): boolean {
         if (!email.trim()) return false
@@ -665,29 +686,32 @@ function ProjectFormBody({
                 </button>
             </div>
 
-            <div className="flex gap-2 mt-1">
-                <button
-                    type="submit"
-                    disabled={loading || hasDupe}
-                    className="bg-primary hover:bg-primary-hover disabled:bg-neutral-200 disabled:text-neutral-400 text-bg rounded-[6px] px-4 py-2 text-[13px] font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
-                >
-                    {loading
-                        ? mode === 'create'
-                            ? 'Creating…'
-                            : 'Saving…'
-                        : mode === 'create'
-                          ? 'Create project'
-                          : 'Save'}
-                </button>
-                {onCancel && (
+            <div className="flex flex-col gap-2 mt-1">
+                <div className="flex gap-2">
                     <button
-                        type="button"
-                        onClick={onCancel}
-                        className="px-3 py-2 text-[13px] text-ink border border-neutral-200 rounded-[6px] hover:bg-neutral-50 transition-colors"
+                        type="submit"
+                        disabled={loading || hasDupe}
+                        className="bg-primary hover:bg-primary-hover disabled:bg-neutral-200 disabled:text-neutral-400 text-bg rounded-[6px] px-4 py-2 text-[13px] font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
                     >
-                        Cancel
+                        {loading
+                            ? mode === 'create'
+                                ? 'Creating…'
+                                : 'Saving…'
+                            : mode === 'create'
+                              ? 'Create project'
+                              : 'Save'}
                     </button>
-                )}
+                    {onCancel && (
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            className="px-3 py-2 text-[13px] text-ink border border-neutral-200 rounded-[6px] hover:bg-neutral-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    )}
+                </div>
+                {error && <p className="text-[13px] text-red-500">{error}</p>}
             </div>
         </form>
     )
