@@ -9,7 +9,7 @@ import { DeleteModal } from './DeleteModal'
 import { StatusBadge } from './StatusBadge'
 import type { Project, Session } from './ProjectRow'
 import type { SessionStatus } from './StatusBadge'
-import { createProject, updateProject, deleteProject } from '@/app/actions'
+import { createProject, updateProject, deleteProject, resetSession } from '@/app/actions'
 
 interface FormFields {
     productName: string
@@ -220,6 +220,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                                     setOpenMenuId(null)
                                     setDeleteConfirmId(project.id)
                                 }}
+                                onRetry={() => router.refresh()}
                             />
                         ))}
                     </div>
@@ -304,6 +305,7 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
 }
 
 function ViewPanel({ project }: { project: Project }) {
+    const router = useRouter()
     const issuesUrl = project.sessions.find((s) => s.issuesUrl)?.issuesUrl
     const issuesFailed = project.sessions.some((s) => s.issuesStatus === 'failed')
 
@@ -358,7 +360,10 @@ function ViewPanel({ project }: { project: Project }) {
                                 {session.participantEmail}
                             </p>
                             <div className="flex items-center gap-2.5 shrink-0">
-                                <StatusBadge status={session.status} />
+                                <StatusBadge
+                                    status={session.status}
+                                    title={session.status === 'failed' && session.error ? session.error : undefined}
+                                />
                                 {session.status === 'pending' && (
                                     <button
                                         onClick={() =>
@@ -369,6 +374,21 @@ function ViewPanel({ project }: { project: Project }) {
                                         className="text-[12px] text-muted hover:text-ink transition-colors"
                                     >
                                         Copy link
+                                    </button>
+                                )}
+                                {session.status === 'failed' && (
+                                    <button
+                                        onClick={() =>
+                                            resetSession(session.id).then(() => {
+                                                navigator.clipboard.writeText(
+                                                    `${window.location.origin}/interview/${session.id}`
+                                                )
+                                                router.refresh()
+                                            })
+                                        }
+                                        className="text-[12px] text-muted hover:text-ink transition-colors"
+                                    >
+                                        Retry
                                     </button>
                                 )}
                                 {session.notionUrl ? (

@@ -3,6 +3,7 @@
 import { User } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import type { SessionStatus } from './StatusBadge'
+import { resetSession } from '@/app/actions'
 
 export interface Session {
     id: string
@@ -12,6 +13,7 @@ export interface Session {
     issuesUrl: string | null
     notionStatus: 'success' | 'failed' | null
     issuesStatus: 'success' | 'failed' | null
+    error?: string | null
 }
 
 export interface Project {
@@ -31,6 +33,7 @@ interface ProjectRowProps {
     onView: () => void
     onEdit: () => void
     onDeleteRequest: () => void
+    onRetry: () => void
 }
 
 export function ProjectRow({
@@ -40,6 +43,7 @@ export function ProjectRow({
     onView,
     onEdit,
     onDeleteRequest,
+    onRetry,
 }: ProjectRowProps) {
     const issuesUrl = project.sessions.find((s) => s.issuesUrl)?.issuesUrl
     const canEdit = project.sessions.every((s) => s.status === 'pending')
@@ -123,7 +127,10 @@ export function ProjectRow({
                                 </p>
                             </div>
                             <div className="flex items-center gap-2.5 shrink-0">
-                                <StatusBadge status={session.status} />
+                                <StatusBadge
+                                    status={session.status}
+                                    title={session.status === 'failed' && session.error ? session.error : undefined}
+                                />
                                 {session.status === 'pending' && (
                                     <button
                                         onClick={() =>
@@ -134,6 +141,21 @@ export function ProjectRow({
                                         className="text-[12px] text-muted hover:text-ink transition-colors"
                                     >
                                         Copy link
+                                    </button>
+                                )}
+                                {session.status === 'failed' && (
+                                    <button
+                                        onClick={() =>
+                                            resetSession(session.id).then(() => {
+                                                navigator.clipboard.writeText(
+                                                    `${window.location.origin}/interview/${session.id}`
+                                                )
+                                                onRetry()
+                                            })
+                                        }
+                                        className="text-[12px] text-muted hover:text-ink transition-colors"
+                                    >
+                                        Retry
                                     </button>
                                 )}
                                 {session.notionUrl && (

@@ -22,6 +22,7 @@ interface Session {
     issuesUrl: string | null
     notionStatus: 'success' | 'failed' | null
     issuesStatus: 'success' | 'failed' | null
+    error?: string | null
     deletedAt?: string | null
 }
 

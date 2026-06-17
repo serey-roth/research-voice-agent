@@ -14,10 +14,11 @@ const STATUS_LABELS: Record<SessionStatus, string> = {
     failed: 'Failed',
 }
 
-export function StatusBadge({ status }: { status: SessionStatus }) {
+export function StatusBadge({ status, title }: { status: SessionStatus; title?: string }) {
     return (
         <span
-            className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 ${STATUS_STYLES[status]}`}
+            title={title}
+            className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 ${STATUS_STYLES[status]} ${title ? 'cursor-help' : ''}`}
         >
             {STATUS_LABELS[status]}
         </span>

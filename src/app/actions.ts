@@ -126,7 +126,7 @@ export async function createBrief(
     }
 }
 
-async function getOrCreateProject(
+async function getOrCreateLinearProject(
     linear: LinearClient,
     productName: string,
     teamId: string
@@ -162,7 +162,7 @@ export async function createIssues(
         const participantEmail = session?.participantEmail
         const { client: linear, teamId } = linearCtx
         const createdAt = date ? new Date(date) : undefined
-        const projectId = await getOrCreateProject(linear, product_name, teamId)
+        const projectId = await getOrCreateLinearProject(linear, product_name, teamId)
 
         await Promise.all(
             pain_points.map((point) =>
@@ -254,6 +254,14 @@ export async function recordUsage(conversationId: string, sessionId: string) {
     } catch (err) {
         console.error('recordUsage error:', err)
     }
+}
+
+export async function resetSession(sessionId: string): Promise<void> {
+    const { userId } = await auth()
+    if (!userId) throw new Error('Unauthorized')
+    const session = await redis.get<Record<string, unknown>>(`session:${sessionId}`)
+    if (!session || session.creatorId !== userId) return
+    await redis.set(`session:${sessionId}`, { ...session, status: 'pending', error: null })
 }
 
 export async function disconnectNotion() {
