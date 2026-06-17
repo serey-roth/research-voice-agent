@@ -83,7 +83,7 @@ export default async function UsagePage() {
                             <p className="text-[13px] text-red-700 leading-relaxed">
                                 New interviews are paused.{' '}
                                 <a
-                                    href="mailto:support@yourdomain.com"
+                                    href={`mailto:${process.env.NEXT_PUBLIC_APP_SUPPORT_EMAIL}`}
                                     className="underline hover:no-underline"
                                 >
                                     Reach out
@@ -162,7 +162,7 @@ export default async function UsagePage() {
                         <p className="text-[13px] text-muted">
                             Need more minutes?{' '}
                             <a
-                                href="mailto:support@yourdomain.com"
+                                href={`mailto:${process.env.NEXT_PUBLIC_APP_SUPPORT_EMAIL}`}
                                 className="text-primary hover:text-primary-hover transition-colors"
                             >
                                 Contact us
