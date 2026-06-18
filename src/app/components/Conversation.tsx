@@ -2,8 +2,7 @@
 
 import { useConversation } from '@elevenlabs/react'
 import { useEffect, useRef, useState } from 'react'
-import { Orb } from 'orb-ui'
-import type { OrbState } from 'orb-ui'
+import VoiceScopeWaveform from './VoiceScopeWaveform'
 import {
     createBrief,
     createIssues,
@@ -25,10 +24,16 @@ export function Conversation({ session, sessionId }: { session: Session; session
     const hasStartedRef = useRef(false)
     const conversationIdRef = useRef<string | null>(null)
     const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const startTimeRef = useRef<number | null>(null)
+
     const [hasEnded, setHasEnded] = useState(false)
+    const [elapsed, setElapsed] = useState(0)
     const [micError, setMicError] = useState(false)
     const [sessionError, setSessionError] = useState(false)
     const [connectTimedOut, setConnectTimedOut] = useState(false)
+    const [lastTranscript, setLastTranscript] = useState<{ speaker: string; text: string } | null>(
+        null
+    )
 
     const clientTools = {
         create_brief: async (params: {
@@ -65,6 +70,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
         onConnect: ({ conversationId }) => {
             hasStartedRef.current = true
             conversationIdRef.current = conversationId
+            startTimeRef.current = Date.now()
             if (connectTimeoutRef.current) {
                 clearTimeout(connectTimeoutRef.current)
                 connectTimeoutRef.current = null
@@ -79,6 +85,12 @@ export function Conversation({ session, sessionId }: { session: Session; session
             if (conversationIdRef.current) {
                 recordUsage(conversationIdRef.current, sessionId)
             }
+        },
+        onMessage: ({ message, source }: { message: string; source: string }) => {
+            setLastTranscript({
+                speaker: source === 'ai' || source === 'agent' ? 'agent' : 'user',
+                text: message,
+            })
         },
         onError: (message: string) => {
             setSessionError(true)
@@ -95,7 +107,16 @@ export function Conversation({ session, sessionId }: { session: Session; session
     const isConnected = status === 'connected'
     const isActive = isConnecting || isConnected
 
-    // Best-effort: end session on tab close so onDisconnect fires and usage is recorded
+    useEffect(() => {
+        if (!isConnected) return
+        const interval = setInterval(() => {
+            if (startTimeRef.current) {
+                setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000))
+            }
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [isConnected])
+
     useEffect(() => {
         const handleBeforeUnload = () => {
             if (isActive) conversation.endSession()
@@ -139,71 +160,84 @@ export function Conversation({ session, sessionId }: { session: Session; session
         conversation.endSession()
     }
 
-    const orbState: OrbState = isConnecting
-        ? 'connecting'
-        : isConnected
-          ? isSpeaking
-              ? 'speaking'
-              : 'listening'
-          : 'idle'
+    function formatTime(s: number) {
+        const m = Math.floor(s / 60)
+        const sec = s % 60
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+    }
+
+    type AgentState = 'idle' | 'listening' | 'speaking' | 'processing'
+    const waveformState: AgentState = isConnected ? (isSpeaking ? 'speaking' : 'listening') : 'idle'
 
     if (hasEnded) {
         return (
-            <div className="flex flex-col items-center gap-4 text-center max-w-xs">
-                <p className="text-lg font-semibold text-ink tracking-tight">
-                    Thanks for your time.
-                </p>
-                <p className="text-[13px] text-muted leading-relaxed">
-                    Your feedback on {session.productName} has been recorded.
-                </p>
+            <div className="flex flex-col items-center gap-12 text-center w-full">
+                <VoiceScopeWaveform state="processing" bare scale={2} showControls={false} />
+                <p className="text-[13px] text-muted">Thank you so much for your feedback.</p>
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col items-center gap-12 text-center w-full max-w-xs">
-            {/* Product context — fades out when active */}
-            <div
-                className={`flex flex-col gap-1.5 transition-opacity duration-300 ${isActive ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-            >
-                <p className="text-xs text-muted uppercase tracking-widest font-medium">
-                    Voice Interview
-                </p>
-                <p className="text-2xl font-semibold text-ink tracking-tight leading-snug">
-                    {session.productName}
-                </p>
-                <p className="text-[13px] text-muted leading-relaxed mt-1 max-w-[220px] mx-auto">
-                    Share your honest thoughts — this is a short voice conversation.
-                </p>
+        <div className="flex flex-col items-center gap-12 text-center w-full">
+            <div className="h-4">
+                {isConnected && (
+                    <span
+                        style={{ fontFamily: "ui-monospace, 'Geist Mono', monospace" }}
+                        className="text-xs text-muted tracking-widest"
+                    >
+                        {formatTime(elapsed)}
+                    </span>
+                )}
             </div>
 
-            {/* Orb */}
-            <div className="flex flex-col items-center gap-5">
-                <div className="relative">
-                    <Orb
-                        state={orbState}
-                        theme="circle"
-                        size={152}
-                        onStart={startConversation}
-                        onStop={stopConversation}
-                        aria-label={isActive ? 'End interview' : 'Start interview'}
-                    />
-                </div>
-
-                <div className="h-4 flex items-center justify-center">
-                    <p className="text-[13px] text-muted">
-                        {isActive
-                            ? isConnecting
-                                ? 'Getting ready…'
-                                : isSpeaking
-                                  ? 'Speaking'
-                                  : 'Listening'
-                            : sessionError || connectTimedOut || micError
-                              ? null
-                              : 'Tap to begin'}
+            {!isActive && (
+                <div className="flex flex-col gap-2">
+                    <p className="text-xs text-muted uppercase tracking-widest font-medium">
+                        You&apos;ve been invited to share some feedback on
+                    </p>
+                    <p className="text-3xl font-semibold text-ink tracking-tight">
+                        {session.productName}
+                    </p>
+                    <p className="text-[13px] text-muted leading-relaxed max-w-[200px] mx-auto">
+                        Share your honest thoughts and start when you&apos;re ready.
                     </p>
                 </div>
+            )}
 
+            {isActive && (
+                <VoiceScopeWaveform state={waveformState} bare scale={2} showControls={false} />
+            )}
+
+            {isActive && lastTranscript && (
+                <p
+                    className="text-center text-ink leading-relaxed max-w-sm"
+                    style={{ fontSize: 17 }}
+                >
+                    {lastTranscript.text}
+                </p>
+            )}
+            {isActive && !lastTranscript && isConnecting && (
+                <p className="text-[13px] text-muted">Connecting…</p>
+            )}
+
+            <div className="flex flex-col items-center gap-3">
+                {!isActive && !sessionError && !connectTimedOut && !micError && (
+                    <button
+                        onClick={startConversation}
+                        className="px-6 py-3 bg-ink text-bg text-sm font-medium rounded-full hover:opacity-80 active:scale-[0.97] transition duration-150"
+                    >
+                        Start interview
+                    </button>
+                )}
+                {isActive && (
+                    <button
+                        onClick={stopConversation}
+                        className="px-6 py-3 border border-neutral-200 text-muted text-sm rounded-full hover:text-ink hover:border-neutral-300 active:scale-[0.97] transition duration-150"
+                    >
+                        End interview
+                    </button>
+                )}
                 {(micError || sessionError || connectTimedOut) && (
                     <p className="text-[13px] text-red-500 max-w-[240px] leading-relaxed">
                         {micError
