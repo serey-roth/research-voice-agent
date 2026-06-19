@@ -2,7 +2,8 @@
 
 import { useConversation } from '@elevenlabs/react'
 import { useEffect, useRef, useState } from 'react'
-import VoiceScopeWaveform from './VoiceScopeWaveform'
+import { DateTime } from 'luxon'
+import VoiceScopeWaveform, { AgentState } from './VoiceScopeWaveform'
 import {
     createBrief,
     createIssues,
@@ -31,9 +32,6 @@ export function Conversation({ session, sessionId }: { session: Session; session
     const [micError, setMicError] = useState(false)
     const [sessionError, setSessionError] = useState(false)
     const [connectTimedOut, setConnectTimedOut] = useState(false)
-    const [lastTranscript, setLastTranscript] = useState<{ speaker: string; text: string } | null>(
-        null
-    )
 
     const clientTools = {
         create_brief: async (params: {
@@ -77,20 +75,19 @@ export function Conversation({ session, sessionId }: { session: Session; session
             }
             updateSessionStatus(sessionId, 'active')
         },
-        onDisconnect: () => {
+        onDisconnect: (details) => {
             if (!hasStartedRef.current) return
-            setHasEnded(true)
-            completeSession(sessionId, {})
-            updateSessionStatus(sessionId, 'completed')
+            if (details.reason === 'error') {
+                updateSessionStatus(sessionId, 'failed', 'Something went wrong with the server.') // store actual error but check if human readable
+                setSessionError(true)
+            } else {
+                updateSessionStatus(sessionId, 'completed')
+                completeSession(sessionId, {})
+                setHasEnded(true)
+            }
             if (conversationIdRef.current) {
                 recordUsage(conversationIdRef.current, sessionId)
             }
-        },
-        onMessage: ({ message, source }: { message: string; source: string }) => {
-            setLastTranscript({
-                speaker: source === 'ai' || source === 'agent' ? 'agent' : 'user',
-                text: message,
-            })
         },
         onError: (message: string) => {
             setSessionError(true)
@@ -98,6 +95,11 @@ export function Conversation({ session, sessionId }: { session: Session; session
             if (connectTimeoutRef.current) {
                 clearTimeout(connectTimeoutRef.current)
                 connectTimeoutRef.current = null
+            }
+        },
+        onAgentToolResponse: (props) => {
+            if (props.tool_name === 'end_call') {
+                setHasEnded(true)
             }
         },
     })
@@ -145,7 +147,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
                     product_description: session.productDescription,
                     research_goal: session.researchGoal,
                     participant_email: session.participantEmail,
-                    current_date: new Date().toISOString().split('T')[0],
+                    current_date: DateTime.utc().toISO(),
                 },
                 clientTools,
             })
@@ -166,14 +168,31 @@ export function Conversation({ session, sessionId }: { session: Session; session
         return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
     }
 
-    type AgentState = 'idle' | 'listening' | 'speaking' | 'processing'
     const waveformState: AgentState = isConnected ? (isSpeaking ? 'speaking' : 'listening') : 'idle'
 
     if (hasEnded) {
         return (
-            <div className="flex flex-col items-center gap-12 text-center w-full">
-                <VoiceScopeWaveform state="processing" bare scale={2} showControls={false} />
-                <p className="text-[13px] text-muted">Thank you so much for your feedback.</p>
+            <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+                <p className="text-lg font-semibold text-ink tracking-tight">
+                    Thank you for your time.
+                </p>
+                <p className="text-[13px] text-muted leading-relaxed">
+                    Your feedback has been sent to the researcher.
+                </p>
+            </div>
+        )
+    }
+
+    if (sessionError) {
+        return (
+            <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+                <p className="text-lg font-semibold text-ink tracking-tight">
+                    Something went wrong.
+                </p>
+                <p className="text-[13px] text-muted leading-relaxed">
+                    Refresh the page and try again. If the issue persists, please contact the
+                    researcher.
+                </p>
             </div>
         )
     }
@@ -209,20 +228,10 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 <VoiceScopeWaveform state={waveformState} bare scale={2} showControls={false} />
             )}
 
-            {isActive && lastTranscript && (
-                <p
-                    className="text-center text-ink leading-relaxed max-w-sm"
-                    style={{ fontSize: 17 }}
-                >
-                    {lastTranscript.text}
-                </p>
-            )}
-            {isActive && !lastTranscript && isConnecting && (
-                <p className="text-[13px] text-muted">Connecting…</p>
-            )}
+            {isActive && isConnecting && <p className="text-[13px] text-muted">Connecting…</p>}
 
             <div className="flex flex-col items-center gap-3">
-                {!isActive && !sessionError && !connectTimedOut && !micError && (
+                {!isActive && !connectTimedOut && !micError && (
                     <button
                         onClick={startConversation}
                         className="px-6 py-3 bg-ink text-bg text-sm font-medium rounded-full hover:opacity-80 active:scale-[0.97] transition duration-150"
@@ -238,7 +247,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
                         End interview
                     </button>
                 )}
-                {(micError || sessionError || connectTimedOut) && (
+                {(micError || connectTimedOut) && (
                     <p className="text-[13px] text-red-500 max-w-[240px] leading-relaxed">
                         {micError
                             ? 'Microphone access was denied. Allow mic access in your browser settings and try again.'

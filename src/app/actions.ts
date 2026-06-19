@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { Client } from '@notionhq/client'
 import { LinearClient } from '@linear/sdk'
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js'
+import { DateTime } from 'luxon'
 import {
     getSession,
     setSession,
@@ -175,7 +176,7 @@ export async function createIssues(
 
         const participantEmail = session?.participantEmail
         const { client: linear, teamId } = linearCtx
-        const createdAt = date ? new Date(date) : undefined
+        const createdAt = date ? DateTime.fromISO(date, { zone: 'utc' }).toJSDate() : undefined
         const { id: projectId, url } = await getOrCreateLinearProject(linear, product_name, teamId)
 
         await Promise.all(
@@ -364,7 +365,7 @@ export async function createProject(
     if (usedSeconds >= capSeconds) throw new Error('Usage cap reached')
 
     const projectId = crypto.randomUUID()
-    const now = new Date().toISOString()
+    const now = DateTime.utc().toISO()
 
     const emails = [
         ...new Set(participantEmails.map((e) => e.trim().toLowerCase()).filter(Boolean)),
@@ -434,7 +435,7 @@ export async function updateProject(
     if (!project || project.deletedAt) throw new Error('Not found')
     if (project.creatorId !== userId) throw new Error('Forbidden')
 
-    const now = new Date().toISOString()
+    const now = DateTime.utc().toISO()
     const ops: Promise<unknown>[] = []
 
     if (updates.productDescription !== undefined || updates.researchGoal !== undefined) {
@@ -505,7 +506,7 @@ export async function deleteProject(projectId: string): Promise<void> {
     if (!project) throw new Error('Not found')
     if (project.creatorId !== userId) throw new Error('Forbidden')
 
-    const now = new Date().toISOString()
+    const now = DateTime.utc().toISO()
     const sessionIds = await getProjectSessionIds(projectId)
     const sessions = (
         await Promise.all(
