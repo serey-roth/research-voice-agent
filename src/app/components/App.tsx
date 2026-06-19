@@ -44,10 +44,10 @@ export default function App({ header, children }: Props) {
 
                 <nav className="flex-1 px-3 py-3 flex flex-col gap-0.5">
                     <Link
-                        href="/"
+                        href="/home"
                         onClick={() => setSidebarOpen(false)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-[6px] text-[13px] font-medium transition-colors outline-none ${
-                            pathname === '/'
+                            pathname === '/home'
                                 ? 'bg-neutral-100 text-ink'
                                 : 'text-muted hover:text-ink hover:bg-neutral-50'
                         }`}

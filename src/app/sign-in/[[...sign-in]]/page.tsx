@@ -4,7 +4,7 @@ import { SignIn } from '@clerk/nextjs'
 
 export default async function SignInPage() {
     const { userId } = await auth()
-    if (userId) redirect('/')
+    if (userId) redirect('/home')
 
     return (
         <main className="min-h-screen flex items-center justify-center">

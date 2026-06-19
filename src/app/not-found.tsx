@@ -9,7 +9,7 @@ export default function NotFound() {
                     This page doesn&rsquo;t exist or has been moved.
                 </p>
                 <Link
-                    href="/"
+                    href="/home"
                     className="text-[13px] text-primary hover:text-primary-hover transition-colors"
                 >
                     Back to Home
