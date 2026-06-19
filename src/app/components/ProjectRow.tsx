@@ -1,6 +1,7 @@
 'use client'
 
 import { User } from 'lucide-react'
+import { DateTime } from 'luxon'
 import { StatusBadge } from './StatusBadge'
 import type { SessionStatus } from './StatusBadge'
 import { resetSession } from '@/app/actions'
@@ -67,10 +68,9 @@ export function ProjectRow({
                         </a>
                     )}
                     <p className="text-[12px] text-muted">
-                        {new Date(project.createdAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                        })}
+                        {DateTime.fromISO(project.createdAt, { zone: 'utc' })
+                            .toLocal()
+                            .toFormat('MMM d')}
                     </p>
                     <div className="relative">
                         <button
