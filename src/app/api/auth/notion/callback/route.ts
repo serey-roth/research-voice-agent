@@ -14,7 +14,9 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
-    if (!code) redirect('/onboarding')
+    const returnTo = searchParams.get('state') ?? '/onboarding'
+
+    if (!code) redirect(returnTo)
 
     const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
 
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
         }),
     })
 
-    if (!res.ok) redirect('/onboarding')
+    if (!res.ok) redirect(returnTo)
 
     const data = await res.json()
     const accessToken = data.access_token as string
@@ -43,5 +45,5 @@ export async function GET(request: Request) {
         data.duplicated_template_id ?? undefined
     )
 
-    redirect('/onboarding')
+    redirect(returnTo)
 }

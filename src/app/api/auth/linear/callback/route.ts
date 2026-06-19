@@ -14,7 +14,9 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
-    if (!code) redirect('/onboarding')
+    const returnTo = searchParams.get('state') ?? '/onboarding'
+
+    if (!code) redirect(returnTo)
 
     const res = await fetch('https://api.linear.app/oauth/token', {
         method: 'POST',
@@ -28,11 +30,11 @@ export async function GET(request: Request) {
         }),
     })
 
-    if (!res.ok) redirect('/onboarding')
+    if (!res.ok) redirect(returnTo)
 
     const data = await res.json()
     const accessToken = data.access_token as string
 
     await setLinearToken(userId, accessToken)
-    redirect('/onboarding')
+    redirect(returnTo)
 }

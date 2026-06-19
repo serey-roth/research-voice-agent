@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getNotionDatabases, getLinearTeams } from '@/app/actions'
+import { getLinearTeams } from '@/app/actions'
 import {
     OnboardingLinearTeamSelector,
     OnboardingNotionDatabaseSelector,
@@ -22,7 +22,6 @@ export default async function OnboardingPage() {
     const linearConnected = !!linearToken
     const pendingLinearTeamSelection = linearConnected && !linearTeamId
 
-    const notionDatabases = pendingNotionDbSelection ? await getNotionDatabases(notionToken!) : []
     const linearTeams = linearToken ? await getLinearTeams(linearToken) : []
 
     return (
@@ -71,14 +70,7 @@ export default async function OnboardingPage() {
                                 </a>
                             </div>
                         )}
-                        {pendingNotionDbSelection && (
-                            <div className="flex flex-col gap-2">
-                                <p className="text-[13px] text-muted">
-                                    Select a database for briefs:
-                                </p>
-                                <OnboardingNotionDatabaseSelector databases={notionDatabases} />
-                            </div>
-                        )}
+                        {pendingNotionDbSelection && <OnboardingNotionDatabaseSelector />}
                     </div>
 
                     <div className="p-5 rounded-lg border border-neutral-200 flex flex-col gap-4">
@@ -131,7 +123,7 @@ export default async function OnboardingPage() {
                 <div className="mt-8">
                     {notionConnected && !pendingLinearTeamSelection ? (
                         <Link
-                            href="/"
+                            href="/home"
                             className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-medium rounded-[6px] transition-colors inline-block"
                         >
                             Continue
