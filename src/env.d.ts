@@ -1,3 +1,9 @@
+declare const pendo:
+    | {
+          track(event: string, properties?: Record<string, string | number | boolean>): void
+      }
+    | undefined
+
 declare namespace NodeJS {
     interface ProcessEnv {
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: string

@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { setNotionAuth } from '@/lib/db'
+import { pendoTrack } from '@/lib/pendo'
 
 export async function GET(request: Request) {
     const { userId } = await auth()
@@ -44,6 +45,12 @@ export async function GET(request: Request) {
         data.workspace_name ?? '',
         data.duplicated_template_id ?? undefined
     )
+
+    const source = returnTo.includes('/settings') ? 'settings' : 'onboarding'
+    await pendoTrack('notion_integration_connected', userId, {
+        workspaceName: (data.workspace_name as string) ?? '',
+        source,
+    })
 
     redirect(returnTo)
 }

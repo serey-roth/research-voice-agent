@@ -40,6 +40,12 @@ export function LinearTeamSelector({
         setLoading(true)
         try {
             await selectLinearTeam(selectedId)
+            if (typeof pendo !== 'undefined') {
+                pendo.track('linear_team_selected', {
+                    teamId: selectedId,
+                    isChange: !!currentId,
+                })
+            }
             onSuccess?.()
         } finally {
             setLoading(false)

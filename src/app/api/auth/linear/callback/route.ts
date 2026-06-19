@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { setLinearToken } from '@/lib/db'
+import { pendoTrack } from '@/lib/pendo'
 
 export async function GET(request: Request) {
     const { userId } = await auth()
@@ -36,5 +37,11 @@ export async function GET(request: Request) {
     const accessToken = data.access_token as string
 
     await setLinearToken(userId, accessToken)
+
+    const source = returnTo.includes('/settings') ? 'settings' : 'onboarding'
+    await pendoTrack('linear_integration_connected', userId, {
+        source,
+    })
+
     redirect(returnTo)
 }

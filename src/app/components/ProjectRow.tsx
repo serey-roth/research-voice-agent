@@ -133,11 +133,18 @@ export function ProjectRow({
                                 />
                                 {session.status === 'pending' && (
                                     <button
-                                        onClick={() =>
+                                        onClick={() => {
                                             navigator.clipboard.writeText(
                                                 `${window.location.origin}/interview/${session.id}`
                                             )
-                                        }
+                                            if (typeof pendo !== 'undefined') {
+                                                pendo.track('interview_link_copied', {
+                                                    sessionId: session.id,
+                                                    participantEmail: session.participantEmail,
+                                                    projectId: project.id,
+                                                })
+                                            }
+                                        }}
                                         className="text-[12px] text-muted hover:text-ink transition-colors"
                                     >
                                         Copy link
@@ -150,6 +157,13 @@ export function ProjectRow({
                                                 navigator.clipboard.writeText(
                                                     `${window.location.origin}/interview/${session.id}`
                                                 )
+                                                if (typeof pendo !== 'undefined') {
+                                                    pendo.track('session_reset', {
+                                                        sessionId: session.id,
+                                                        participantEmail: session.participantEmail,
+                                                        projectId: project.id,
+                                                    })
+                                                }
                                                 onRetry()
                                             })
                                         }

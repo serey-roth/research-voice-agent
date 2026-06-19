@@ -25,6 +25,9 @@ export default function IntegrationsContent({
     function handleDisconnectLinear() {
         startTransition(async () => {
             await disconnectLinear()
+            if (typeof pendo !== 'undefined') {
+                pendo.track('linear_integration_disconnected')
+            }
             router.refresh()
         })
     }

@@ -5,6 +5,7 @@ import { Client } from '@notionhq/client'
 import { LinearClient } from '@linear/sdk'
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js'
 import { DateTime } from 'luxon'
+import { pendoTrack } from '@/lib/pendo'
 import {
     getSession,
     setSession,
@@ -279,6 +280,11 @@ export async function recordUsage(conversationId: string, sessionId: string) {
                 incrementUserUsageSeconds(creatorId, seconds),
                 setSessionDuration(sessionId, seconds),
             ])
+            await pendoTrack('interview_usage_recorded', creatorId, {
+                sessionId,
+                conversationId,
+                durationSeconds: seconds,
+            })
         }
     } catch (err) {
         console.error('recordUsage error:', err)
