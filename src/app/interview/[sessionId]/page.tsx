@@ -7,7 +7,7 @@ import React from 'react'
 interface Session {
     projectId: string
     participantEmail: string
-    status: 'pending' | 'completed'
+    status: 'pending' | 'active' | 'completed' | 'failed'
     creatorId?: string
 }
 
@@ -36,7 +36,7 @@ function InterviewLayout({ children }: { children: React.ReactNode }) {
             <div className="border-t border-black/5" />
 
             <footer className="px-8 py-2 flex items-center justify-between">
-                <span className="text-xs text-muted">© {new Date().getFullYear()} Voice Scope</span>
+                <span className="text-xs text-muted">© {new Date().getFullYear()} VoiceScope</span>
             </footer>
         </main>
     )
@@ -59,8 +59,7 @@ export default async function InterviewPage({
                     </div>
                     <p className="text-sm font-medium text-ink">Link not found</p>
                     <p className="text-[13px] text-muted leading-relaxed">
-                        This session link is invalid or has expired. Check with the person who sent
-                        it.
+                        This session link is invalid or has expired. Please contact the researcher.
                     </p>
                 </div>
             </InterviewLayout>
@@ -87,21 +86,32 @@ export default async function InterviewPage({
 
     if (session.status === 'completed') {
         return (
-            <main className="min-h-screen flex flex-col bg-bg">
-                <header className="px-6 py-5">
-                    <AppLogo size={30} />
-                </header>
-                <div className="flex flex-1 flex-col items-center justify-center px-6 pb-16">
-                    <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-                        <p className="text-lg font-semibold text-ink tracking-tight">
-                            Thanks for your time.
-                        </p>
-                        <p className="text-[13px] text-muted leading-relaxed">
-                            Your responses have been recorded.
-                        </p>
-                    </div>
+            <InterviewLayout>
+                <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+                    <p className="text-lg font-semibold text-ink tracking-tight">
+                        Thank you for your time.
+                    </p>
+                    <p className="text-[13px] text-muted leading-relaxed">
+                        Your feedback has been sent to the researcher.
+                    </p>
                 </div>
-            </main>
+            </InterviewLayout>
+        )
+    }
+
+    if (session.status === 'failed') {
+        return (
+            <InterviewLayout>
+                <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+                    <p className="text-lg font-semibold text-ink tracking-tight">
+                        Something went wrong.
+                    </p>
+                    <p className="text-[13px] text-muted leading-relaxed">
+                        Refresh the page and try again. If the issue persists, please contact the
+                        researcher.
+                    </p>
+                </div>
+            </InterviewLayout>
         )
     }
 
