@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-type AgentState = 'idle' | 'listening' | 'speaking' | 'processing'
+export type AgentState = 'idle' | 'listening' | 'speaking' | 'processing'
 
 const STATES: Record<
     AgentState,
