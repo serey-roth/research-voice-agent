@@ -72,8 +72,21 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
 
     async function handleDelete(projectId: string) {
         setDeleteConfirmId(null)
+        const project = projects.find((p) => p.id === projectId)
         try {
             await deleteProject(projectId)
+            if (typeof pendo !== 'undefined' && project) {
+                pendo.track('project_deleted', {
+                    projectId,
+                    sessionCount: project.sessions.length,
+                    completedSessionCount: project.sessions.filter(
+                        (s) => s.status === 'completed'
+                    ).length,
+                    projectAgeSeconds: Math.round(
+                        (Date.now() - new Date(project.createdAt).getTime()) / 1000
+                    ),
+                })
+            }
             closePanel()
             router.refresh()
         } catch {}
@@ -81,12 +94,21 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
 
     async function handleCreate(data: FormState): Promise<string | null> {
         try {
+            const validEmails = data.newEmails.filter((e) => e.trim())
             await createProject(
                 data.productName,
                 data.productDescription,
                 data.researchGoal,
-                data.newEmails.filter((e) => e.trim())
+                validEmails
             )
+            if (typeof pendo !== 'undefined') {
+                pendo.track('project_created', {
+                    productName: data.productName,
+                    participantCount: validEmails.length,
+                    researchGoalLength: data.researchGoal.length,
+                    productDescriptionLength: data.productDescription.length,
+                })
+            }
             router.refresh()
             closePanel()
             return null
@@ -112,6 +134,15 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                 ...fieldUpdates,
                 ...(newEmails.length ? { participantEmails: newEmails } : {}),
             })
+
+            if (typeof pendo !== 'undefined') {
+                pendo.track('project_updated', {
+                    projectId: currentProject.id,
+                    fieldsUpdated: canEditFields,
+                    newParticipantCount: newEmails.length,
+                    totalParticipantCount: currentProject.sessions.length + sessions.length,
+                })
+            }
 
             const newSessions = sessions.map((s) => ({
                 id: s.id,

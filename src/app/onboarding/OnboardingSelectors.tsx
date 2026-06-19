@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { LinearTeamSelector } from '../components/LinearTeamSelector'
 import { createNotionDatabase } from '@/app/actions'
 
@@ -16,7 +17,15 @@ export function OnboardingNotionDatabaseSelector() {
 
     useEffect(() => {
         createNotionDatabase()
-            .then(() => router.refresh())
+            .then((result) => {
+                if (typeof pendo !== 'undefined') {
+                    pendo.track('notion_database_created', {
+                        databaseId: result.id,
+                        source: 'onboarding',
+                    })
+                }
+                router.refresh()
+            })
             .catch(() => setError(true))
     }, [router])
 
@@ -34,4 +43,32 @@ export function OnboardingNotionDatabaseSelector() {
 export function OnboardingLinearTeamSelector({ teams }: { teams: Team[] }) {
     const router = useRouter()
     return <LinearTeamSelector teams={teams} onSuccess={() => router.push('/onboarding')} />
+}
+
+export function OnboardingContinueLink({
+    notionConnected,
+    linearConnected,
+    linearTeamSelected,
+}: {
+    notionConnected: boolean
+    linearConnected: boolean
+    linearTeamSelected: boolean
+}) {
+    return (
+        <Link
+            href="/home"
+            onClick={() => {
+                if (typeof pendo !== 'undefined') {
+                    pendo.track('onboarding_completed', {
+                        notionConnected,
+                        linearConnected,
+                        linearTeamSelected,
+                    })
+                }
+            }}
+            className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-medium rounded-[6px] transition-colors inline-block"
+        >
+            Continue
+        </Link>
+    )
 }

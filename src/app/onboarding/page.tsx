@@ -1,8 +1,8 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { getLinearTeams } from '@/app/actions'
 import {
+    OnboardingContinueLink,
     OnboardingLinearTeamSelector,
     OnboardingNotionDatabaseSelector,
 } from './OnboardingSelectors'
@@ -122,12 +122,11 @@ export default async function OnboardingPage() {
 
                 <div className="mt-8">
                     {notionConnected && !pendingLinearTeamSelection ? (
-                        <Link
-                            href="/home"
-                            className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-medium rounded-[6px] transition-colors inline-block"
-                        >
-                            Continue
-                        </Link>
+                        <OnboardingContinueLink
+                            notionConnected={notionConnected}
+                            linearConnected={linearConnected}
+                            linearTeamSelected={!!linearTeamId}
+                        />
                     ) : pendingNotionDbSelection ? (
                         <p className="text-[13px] text-muted">
                             Select a Notion database to continue.

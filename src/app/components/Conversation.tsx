@@ -47,6 +47,15 @@ export function Conversation({ session, sessionId }: { session: Session; session
         }) => {
             const { url, status } = await createBrief(params, sessionId)
             await completeSession(sessionId, { briefUrl: url, briefStatus: status })
+            if (typeof pendo !== 'undefined') {
+                pendo.track('research_brief_generated', {
+                    sessionId,
+                    productName: params.product_name,
+                    status,
+                    briefUrl: url ?? '',
+                    participantEmail: params.participant_email,
+                })
+            }
             return url ?? ''
         },
         create_issues: async (params: {
@@ -60,6 +69,16 @@ export function Conversation({ session, sessionId }: { session: Session; session
         }) => {
             const { count, url, status } = await createIssues(params, sessionId)
             await completeSession(sessionId, { issuesUrl: url, issuesStatus: status })
+            if (typeof pendo !== 'undefined') {
+                pendo.track('linear_issues_created', {
+                    sessionId,
+                    productName: params.product_name,
+                    issueCount: count,
+                    status,
+                    linearProjectUrl: url ?? '',
+                    participantEmail: session.participantEmail,
+                })
+            }
             return JSON.stringify({ count, url })
         },
     }
@@ -74,16 +93,47 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 connectTimeoutRef.current = null
             }
             updateSessionStatus(sessionId, 'active')
+            if (typeof pendo !== 'undefined') {
+                pendo.track('interview_started', {
+                    sessionId,
+                    conversationId,
+                    productName: session.productName,
+                    participantEmail: session.participantEmail,
+                })
+            }
         },
         onDisconnect: (details) => {
             if (!hasStartedRef.current) return
             if (details.reason === 'error') {
-                updateSessionStatus(sessionId, 'failed', 'Something went wrong with the server.') // store actual error but check if human readable
+                updateSessionStatus(sessionId, 'failed', 'Something went wrong with the server.')
                 setSessionError(true)
+                if (typeof pendo !== 'undefined') {
+                    pendo.track('interview_failed', {
+                        sessionId,
+                        productName: session.productName,
+                        errorMessage: 'Something went wrong with the server.',
+                        failureReason: 'disconnect_error',
+                        elapsedSeconds: startTimeRef.current
+                            ? Math.round((Date.now() - startTimeRef.current) / 1000)
+                            : 0,
+                        participantEmail: session.participantEmail,
+                    })
+                }
             } else {
                 updateSessionStatus(sessionId, 'completed')
                 completeSession(sessionId, {})
                 setHasEnded(true)
+                if (typeof pendo !== 'undefined') {
+                    pendo.track('interview_completed', {
+                        sessionId,
+                        conversationId: conversationIdRef.current ?? '',
+                        productName: session.productName,
+                        durationSeconds: startTimeRef.current
+                            ? Math.round((Date.now() - startTimeRef.current) / 1000)
+                            : 0,
+                        participantEmail: session.participantEmail,
+                    })
+                }
             }
             if (conversationIdRef.current) {
                 recordUsage(conversationIdRef.current, sessionId)
@@ -95,6 +145,18 @@ export function Conversation({ session, sessionId }: { session: Session; session
             if (connectTimeoutRef.current) {
                 clearTimeout(connectTimeoutRef.current)
                 connectTimeoutRef.current = null
+            }
+            if (typeof pendo !== 'undefined') {
+                pendo.track('interview_failed', {
+                    sessionId,
+                    productName: session.productName,
+                    errorMessage: message.substring(0, 200),
+                    failureReason: 'on_error',
+                    elapsedSeconds: startTimeRef.current
+                        ? Math.round((Date.now() - startTimeRef.current) / 1000)
+                        : 0,
+                    participantEmail: session.participantEmail,
+                })
             }
         },
         onAgentToolResponse: (props) => {
@@ -137,6 +199,16 @@ export function Conversation({ session, sessionId }: { session: Session; session
             connectTimeoutRef.current = setTimeout(() => {
                 conversation.endSession()
                 setConnectTimedOut(true)
+                if (typeof pendo !== 'undefined') {
+                    pendo.track('interview_failed', {
+                        sessionId,
+                        productName: session.productName,
+                        errorMessage: 'Connection timed out',
+                        failureReason: 'timeout',
+                        elapsedSeconds: CONNECT_TIMEOUT_MS / 1000,
+                        participantEmail: session.participantEmail,
+                    })
+                }
             }, CONNECT_TIMEOUT_MS)
 
             conversation.startSession({
