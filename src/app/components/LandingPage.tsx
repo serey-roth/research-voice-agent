@@ -146,8 +146,6 @@ function FindingsPreview() {
     )
 }
 
-// ─── Feature definitions ──────────────────────────────────────────────────────
-
 const FEATURES = [
     {
         title: 'Set a research goal',
@@ -171,8 +169,6 @@ const FEATURES = [
     },
 ]
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function LandingPage() {
     return (
         <div className="min-h-dvh bg-bg text-ink flex flex-col">
@@ -184,8 +180,7 @@ export default function LandingPage() {
                 </div>
             </header>
 
-            {/* Hero + Features */}
-            <main className="flex-1 px-6 md:px-10 pt-16 md:pt-24 pb-16">
+            <main className="flex-1 px-6 md:px-10 pt-8 md:pt-12 pb-16">
                 <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-20 items-start">
 
                     {/* Left — headline */}
