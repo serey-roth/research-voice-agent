@@ -2,7 +2,7 @@ export type SessionStatus = 'pending' | 'active' | 'completed' | 'failed'
 
 const STATUS_STYLES: Record<SessionStatus, string> = {
     pending: 'text-muted',
-    active: 'text-blue-500',
+    active: 'text-primary',
     completed: 'text-ink',
     failed: 'text-red-400',
 }

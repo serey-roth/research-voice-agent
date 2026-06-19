@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+
 import { User } from 'lucide-react'
 import { AppLogo } from './AppLogo'
 import VoiceScopeWaveform from './VoiceScopeWaveform'
@@ -14,7 +15,7 @@ function NotionMark({ size = 16 }: { size?: number }) {
             alt="Notion"
             width={size}
             height={size}
-            style={{ flexShrink: 0, borderRadius: 3 }}
+            className="shrink-0 rounded-[3px]"
         />
     )
 }
@@ -26,29 +27,23 @@ function LinearMark({ size = 16 }: { size?: number }) {
             alt="Linear"
             width={size}
             height={size}
-            style={{ flexShrink: 0, borderRadius: 3 }}
+            className="shrink-0 rounded-[3px]"
         />
     )
 }
 
 function ResearchGoalPreview() {
     return (
-        <div className="w-full max-w-[240px] flex flex-col gap-3">
-            <div className="flex flex-col gap-0.5 opacity-40">
+        <div className="w-full max-w-[220px] flex flex-col gap-3">
+            <div className="flex flex-col gap-0.5 opacity-35">
                 <p className="text-[10px] text-muted uppercase tracking-widest">Product</p>
                 <p className="text-[12px] font-semibold text-ink">Acme Dashboard</p>
             </div>
-            <div className="flex flex-col gap-0.5 opacity-30">
+            <div className="flex flex-col gap-0.5 opacity-25">
                 <p className="text-[10px] text-muted uppercase tracking-widest">Description</p>
                 <p className="text-[12px] text-muted">A data viz tool for enterprise teams</p>
             </div>
-            <div
-                className="rounded-lg p-2 flex flex-col gap-1.5"
-                style={{
-                    background: 'rgba(91,79,232,0.05)',
-                    border: '0.5px solid rgba(91,79,232,0.18)',
-                }}
-            >
+            <div className="rounded-[6px] p-2.5 flex flex-col gap-1.5 bg-primary/5 border border-primary/20">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
                     Research Goal
                 </p>
@@ -68,25 +63,18 @@ function ParticipantsPreview() {
         { email: 'priya@corp.co', status: 'completed' as const },
     ]
     return (
-        <div className="w-full max-w-[260px] flex flex-col gap-1.5">
+        <div className="w-full max-w-[240px] flex flex-col gap-1.5">
             {participants.map((p, i) => {
                 const focused = i === 1
                 return (
                     <div
                         key={p.email}
-                        className="flex items-center gap-2.5 py-1.5 px-2 rounded-md"
-                        style={
+                        className={`flex items-center gap-2.5 py-1.5 px-2 rounded-[6px] ${
                             focused
-                                ? {
-                                      background: 'rgba(0,0,0,0.025)',
-                                      border: '0.5px solid rgba(0,0,0,0.07)',
-                                  }
-                                : {
-                                      opacity: 0.28,
-                                      filter: 'blur(1px)',
-                                      pointerEvents: 'none',
-                                  }
-                        }
+                                ? 'bg-surface border border-neutral-100'
+                                : 'opacity-25 pointer-events-none'
+                        }`}
+                        style={focused ? undefined : { filter: 'blur(1px)' }}
                     >
                         <User size={11} className="text-muted shrink-0" />
                         <p className="text-[12px] text-muted flex-1 truncate">{p.email}</p>
@@ -103,65 +91,50 @@ function ParticipantsPreview() {
     )
 }
 
+const AGENT_TEXT = '"What did you expect to see on that step?"'
+
 function InterviewPreview() {
     return (
-        <div className="w-full max-w-[260px] flex flex-col gap-3">
-            <div className="flex items-center justify-center mb-4">
-                <span
-                    className="text-[10px] text-muted"
-                    style={{ fontFamily: "ui-monospace, 'Geist Mono', monospace" }}
-                >
-                    00:02:18
-                </span>
+        <div className="w-full max-w-[240px] flex flex-col gap-3">
+            <div className="flex items-center justify-center">
+                <span className="font-mono text-[10px] text-muted">00:02:18</span>
             </div>
 
-            <div className="flex flex-col items-center justify-center" style={{ height: 44 }}>
-                <VoiceScopeWaveform state={'speaking'} bare scale={0.5} showControls={false} />
-                <p
-                    className="text-[11px] text-muted pt-2.5 leading-relaxed"
-                    style={{ fontFamily: "ui-monospace, 'Geist Mono', monospace", minHeight: 34 }}
-                >
-                    What did you expect on that step?
-                </p>
+            <div className="flex items-center justify-center" style={{ height: 44 }}>
+                <VoiceScopeWaveform state="speaking" bare scale={0.5} showControls={false} />
             </div>
+
+            <p
+                className="font-mono text-[10px] text-muted border-t border-neutral-100 pt-2 leading-relaxed"
+                style={{ minHeight: 34 }}
+            >
+                {AGENT_TEXT}
+            </p>
         </div>
     )
 }
 
 function FindingsPreview() {
     return (
-        <div className="w-full max-w-[260px] flex flex-col gap-2">
-            <div
-                className="rounded-lg p-3 flex items-start gap-2.5"
-                style={{ border: '0.5px solid rgba(0,0,0,0.07)' }}
-            >
+        <div className="w-full max-w-[240px] flex flex-col gap-2">
+            <div className="rounded-[6px] border border-neutral-100 p-2.5 flex items-start gap-2">
                 <NotionMark />
                 <div className="min-w-0">
                     <p className="text-[12px] font-semibold text-ink">Research Brief</p>
                     <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-                        Onboarding friction peaks at step 3 — 7 of 9 users stalled before connecting
-                        a data source.
+                        Friction peaks at step 3 — 7 of 9 users stalled before connecting a source.
                     </p>
                 </div>
             </div>
-            <div
-                className="rounded-lg p-3 flex items-start gap-2.5"
-                style={{ border: '0.5px solid rgba(0,0,0,0.07)' }}
-            >
+            <div className="rounded-[6px] border border-neutral-100 p-2.5 flex items-start gap-2">
                 <LinearMark />
                 <div className="min-w-0">
                     <p className="text-[12px] font-semibold text-ink">3 issues filed</p>
-                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
                         {['P1 · Onboarding', 'P2 · Copy'].map((label) => (
                             <span
                                 key={label}
-                                style={{
-                                    fontSize: 10,
-                                    padding: '2px 8px',
-                                    borderRadius: 100,
-                                    background: 'rgba(91,79,232,0.08)',
-                                    color: '#5B4FE8',
-                                }}
+                                className="text-[10px] px-2 py-0.5 rounded-full bg-primary/8 text-primary"
                             >
                                 {label}
                             </span>
@@ -173,6 +146,8 @@ function FindingsPreview() {
     )
 }
 
+// ─── Feature definitions ──────────────────────────────────────────────────────
+
 const FEATURES = [
     {
         title: 'Set a research goal',
@@ -180,8 +155,8 @@ const FEATURES = [
         preview: <ResearchGoalPreview />,
     },
     {
-        title: 'Invite participants by email',
-        description: 'Each participant interview at their own time — no scheduling needed.',
+        title: 'Invite participants',
+        description: 'Each participant interviews on their own time — no scheduling needed.',
         preview: <ParticipantsPreview />,
     },
     {
@@ -190,61 +165,62 @@ const FEATURES = [
         preview: <InterviewPreview />,
     },
     {
-        title: 'Findings land in Notion and Linear',
+        title: 'Findings in Notion and Linear',
         description: 'A brief is saved to Notion. Pain points become issues in Linear.',
         preview: <FindingsPreview />,
     },
 ]
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function LandingPage() {
     return (
         <div className="min-h-dvh bg-bg text-ink flex flex-col">
-            <header className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-black/5">
+            {/* Nav */}
+            <header className="flex items-center px-6 md:px-10 py-4 border-b border-neutral-100">
                 <div className="flex items-center gap-2">
-                    <AppLogo size={30} />
+                    <AppLogo size={28} />
                     <span className="text-sm font-semibold tracking-tight">VoiceScope</span>
-                </div>
-                <div className="align-end">
-                    <Link
-                        href="/sign-in"
-                        className="inline-flex items-center px-5 py-2.5 bg-ink text-bg rounded-full text-sm font-medium hover:opacity-80 active:scale-[0.97] transition duration-150"
-                    >
-                        Try demo
-                    </Link>
                 </div>
             </header>
 
-            <main className="px-6 md:px-16 pt-20 pb-10">
-                <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-start">
-                    <div className="md:pt-30">
-                        <h1 className="text-5xl md:text-7xl font-bold text-ink tracking-[-0.04em] leading-none">
-                            Voice agent for <br />
-                            <span className="italic font-light underline">user research</span>
+            {/* Hero + Features */}
+            <main className="flex-1 px-6 md:px-10 pt-16 md:pt-24 pb-16">
+                <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-20 items-start">
+
+                    {/* Left — headline */}
+                    <div className="md:pt-2">
+                        <h1 className="text-5xl md:text-6xl font-bold text-ink tracking-[-0.04em] leading-none">
+                            Voice agent for{' '}
+                            <br />
+                            <span className="italic font-light">user research</span>
                         </h1>
-                        <p className="text-base text-muted leading-relaxed mt-10">
-                            VoiceScope interviews your users and delivers structured findings
-                            directly to your existing tools.
+                        <p className="text-sm text-muted leading-relaxed mt-6 max-w-sm">
+                            VoiceScope runs async voice interviews with your users and delivers
+                            structured findings to Notion and Linear. No scheduling, no note-taking.
                         </p>
-                        <div className="mt-4">
+                        <div className="mt-8">
                             <Link
                                 href="/sign-in"
                                 className="inline-flex items-center px-5 py-2.5 bg-ink text-bg rounded-full text-sm font-medium hover:opacity-80 active:scale-[0.97] transition duration-150"
                             >
-                                Get started
+                                Try demo
                             </Link>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch">
+
+                    {/* Right — 2×2 feature grid */}
+                    <div className="grid grid-cols-2 gap-3">
                         {FEATURES.map((f) => (
-                            <div key={f.title} className="flex flex-col gap-4 h-full">
-                                <div className="w-full aspect-square rounded-xl border border-black/6 bg-white overflow-hidden flex items-center justify-center p-2 h-[200px]">
+                            <div key={f.title} className="flex flex-col gap-3">
+                                <div className="h-[200px] rounded-xl border border-neutral-100 bg-surface overflow-hidden flex items-center justify-center p-4">
                                     {f.preview}
                                 </div>
-                                <div className="grow">
-                                    <h3 className="text-[13px] font-semibold text-ink">
+                                <div>
+                                    <h3 className="text-[12px] font-semibold text-ink leading-snug">
                                         {f.title}
                                     </h3>
-                                    <p className="mt-1.5 text-[13px] text-muted leading-relaxed">
+                                    <p className="mt-1 text-[12px] text-muted leading-relaxed">
                                         {f.description}
                                     </p>
                                 </div>
@@ -254,8 +230,8 @@ export default function LandingPage() {
                 </div>
             </main>
 
-            <div className="border-t border-black/5" />
-
+            {/* Footer */}
+            <div className="border-t border-neutral-100" />
             <footer className="px-6 md:px-10 py-4">
                 <span className="text-xs text-muted">© {new Date().getFullYear()} VoiceScope</span>
             </footer>

@@ -20,7 +20,7 @@ interface Project {
 function InterviewLayout({ children }: { children: React.ReactNode }) {
     return (
         <main className="min-h-screen flex flex-col bg-bg">
-            <header className="flex items-center justify-between px-8 py-2 border-b border-black/5">
+            <header className="flex items-center justify-between px-8 py-2 border-b border-neutral-100">
                 <div className="flex items-center">
                     <span className="mt-1">
                         <AppLogo size={30} />
@@ -33,7 +33,7 @@ function InterviewLayout({ children }: { children: React.ReactNode }) {
                 {children}
             </div>
 
-            <div className="border-t border-black/5" />
+            <div className="border-t border-neutral-100" />
 
             <footer className="px-8 py-2 flex items-center justify-between">
                 <span className="text-xs text-muted">© {new Date().getFullYear()} VoiceScope</span>

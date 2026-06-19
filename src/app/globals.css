@@ -1,24 +1,37 @@
 @import 'tailwindcss';
 
 @theme {
-    --color-bg: oklch(1 0 0);
-    --color-surface: oklch(0.97 0.005 20);
-    --color-ink: oklch(0.15 0.015 20);
-    --color-muted: oklch(0.52 0.01 20);
-    --color-primary: oklch(0.4 0.13 20);
-    --color-primary-hover: oklch(0.36 0.13 20);
-    --color-accent: oklch(0.65 0.12 250);
+    /* Backgrounds */
+    --color-bg: oklch(1 0 0);               /* pure white — clean base */
+    --color-surface: oklch(0.972 0.005 280); /* barely-there violet-slate — sidebar, cards */
+
+    /* Text */
+    --color-ink: oklch(0.13 0.012 285);     /* rich near-black, faint violet — richer than pure black */
+    --color-muted: oklch(0.50 0.014 280);   /* slate-violet mid-gray — labels, secondary text */
+
+    /* Primary — brand violet */
+    --color-primary: oklch(0.48 0.2 278);
+    --color-primary-hover: oklch(0.43 0.2 278);
+
+    /* Accent — lighter, muted violet for tints and chips */
+    --color-accent: oklch(0.68 0.09 278);
+
+    /* Semantic */
+    --color-error: oklch(0.55 0.18 25);     /* warm red — deliberately warm to signal urgency */
+
+    /* Typography */
+    --font-mono: ui-monospace, 'Geist Mono', monospace;
 }
 
 body {
     background-color: oklch(1 0 0);
-    color: oklch(0.15 0.015 20);
+    color: oklch(0.13 0.012 285);
     font-family: var(--font-sans), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
 }
 
 *:focus-visible {
-    outline: 2px solid oklch(0.4 0.13 20);
+    outline: 2px solid oklch(0.48 0.2 278);
     outline-offset: 2px;
 }
 

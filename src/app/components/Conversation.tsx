@@ -201,10 +201,7 @@ export function Conversation({ session, sessionId }: { session: Session; session
         <div className="flex flex-col items-center gap-12 text-center w-full">
             <div className="h-4">
                 {isConnected && (
-                    <span
-                        style={{ fontFamily: "ui-monospace, 'Geist Mono', monospace" }}
-                        className="text-xs text-muted tracking-widest"
-                    >
+                    <span className="font-mono text-xs text-muted tracking-widest">
                         {formatTime(elapsed)}
                     </span>
                 )}

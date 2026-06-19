@@ -230,13 +230,14 @@ export default function Home({ projects, isOverCap }: { projects: Project[]; isO
                         <ViewPanel project={currentProject} />
                     ) : panelMode === 'view' && currentProject ? (
                         <ProjectFormBody
+                            key={currentProject.id}
                             mode="edit"
                             project={currentProject}
                             onSubmit={handleSave}
                             onCancel={cancelEdit}
                         />
                     ) : (
-                        <ProjectFormBody mode="create" onSubmit={handleCreate} />
+                        <ProjectFormBody key="create" mode="create" onSubmit={handleCreate} />
                     )}
                 </div>
             </div>
@@ -380,7 +381,7 @@ function ProjectFormBody({ mode, project, onSubmit, onCancel }: ProjectFormBodyP
         productName: project?.productName ?? '',
         productDescription: project?.productDescription ?? '',
         researchGoal: project?.researchGoal ?? '',
-        newEmails: [''],
+        newEmails: [],
     })
 
     async function handleSubmit() {
@@ -406,6 +407,12 @@ function ProjectFormBody({ mode, project, onSubmit, onCancel }: ProjectFormBodyP
     }
 
     const hasDupe = form.newEmails.some((e, i) => isEmailDupe(e, i))
+
+    const isDirty =
+        mode === 'create' ||
+        form.productDescription !== (project?.productDescription ?? '') ||
+        form.researchGoal !== (project?.researchGoal ?? '') ||
+        form.newEmails.some((e) => e.trim())
 
     return (
         <form
@@ -460,7 +467,7 @@ function ProjectFormBody({ mode, project, onSubmit, onCancel }: ProjectFormBodyP
                 </label>
                 {canEditFields && (
                     <p className="text-[12px] text-muted -mt-0.5">
-                        Be specific — the more focused the goal, the sharper the interview.
+                        The more focused the goal, the sharper the interview.
                     </p>
                 )}
                 {canEditFields ? (
@@ -544,7 +551,7 @@ function ProjectFormBody({ mode, project, onSubmit, onCancel }: ProjectFormBodyP
                 <div className="flex gap-2">
                     <button
                         type="submit"
-                        disabled={loading || hasDupe}
+                        disabled={loading || hasDupe || !isDirty}
                         className="bg-primary hover:bg-primary-hover disabled:bg-neutral-200 disabled:text-neutral-400 text-bg rounded-[6px] px-4 py-2 text-[13px] font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
                     >
                         {loading
