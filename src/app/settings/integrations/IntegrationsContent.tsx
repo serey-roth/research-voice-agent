@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import App from '@/app/components/App'
-import { disconnectLinear } from '@/app/actions'
+import { disconnectLinear, disconnectNotion } from '@/app/actions'
 import { LinearTeamSelector } from '@/app/components/LinearTeamSelector'
 
 interface Props {
@@ -21,6 +21,13 @@ export default function IntegrationsContent({
 }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+
+    function handleDisconnectNotion() {
+        startTransition(async () => {
+            await disconnectNotion()
+            router.refresh()
+        })
+    }
 
     function handleDisconnectLinear() {
         startTransition(async () => {
@@ -52,7 +59,15 @@ export default function IntegrationsContent({
                                 </p>
                             </div>
                             <div className="shrink-0 flex items-center gap-3 pt-0.5">
-                                {!notionConnected && (
+                                {notionConnected ? (
+                                    <button
+                                        onClick={handleDisconnectNotion}
+                                        disabled={isPending}
+                                        className="text-[13px] text-muted hover:text-red-600 transition-colors disabled:opacity-50"
+                                    >
+                                        Disconnect
+                                    </button>
+                                ) : (
                                     <a
                                         href="/api/auth/notion?returnTo=/settings/integrations"
                                         className="text-[13px] font-medium text-primary hover:text-primary-hover transition-colors"
