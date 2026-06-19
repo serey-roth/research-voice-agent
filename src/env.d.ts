@@ -1,3 +1,9 @@
+interface Window {
+    pendo?: {
+        trackAgent: (eventType: string, metadata: object) => void
+    }
+}
+
 declare namespace NodeJS {
     interface ProcessEnv {
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: string
