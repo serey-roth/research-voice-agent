@@ -74,6 +74,14 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 connectTimeoutRef.current = null
             }
             updateSessionStatus(sessionId, 'active')
+            if (window.pendo) {
+                window.pendo.trackAgent("agent_response", {
+                    agentId: "DKUvQGb97-8D74SF6S1NfahNf1U",
+                    conversationId: sessionId,
+                    messageId: crypto.randomUUID(),
+                    content: "Agent connected",
+                })
+            }
         },
         onDisconnect: (details) => {
             if (!hasStartedRef.current) return
@@ -84,6 +92,14 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 updateSessionStatus(sessionId, 'completed')
                 completeSession(sessionId, {})
                 setHasEnded(true)
+                if (window.pendo) {
+                    window.pendo.trackAgent("agent_response", {
+                        agentId: "DKUvQGb97-8D74SF6S1NfahNf1U",
+                        conversationId: sessionId,
+                        messageId: crypto.randomUUID(),
+                        content: "Interview completed",
+                    })
+                }
             }
             if (conversationIdRef.current) {
                 recordUsage(conversationIdRef.current, sessionId)
@@ -138,6 +154,15 @@ export function Conversation({ session, sessionId }: { session: Session; session
                 conversation.endSession()
                 setConnectTimedOut(true)
             }, CONNECT_TIMEOUT_MS)
+
+            if (window.pendo) {
+                window.pendo.trackAgent("prompt", {
+                    agentId: "DKUvQGb97-8D74SF6S1NfahNf1U",
+                    conversationId: sessionId,
+                    messageId: crypto.randomUUID(),
+                    content: `Starting interview for ${session.productName}`,
+                })
+            }
 
             conversation.startSession({
                 agentId: process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID!,
